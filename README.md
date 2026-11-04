@@ -75,9 +75,14 @@ pip install -r ~/.claude/skills/yangsik/requirements.txt
 
 스킬을 올린 뒤 새 대화에 그대로 붙여 넣으세요.
 
+**⓪ 환경 점검 (처음 한 번)**
+```
+양식대로 스킬 환경 점검해줘
+```
+
 **① 1페이지 보고서 (Word)**
 ```
-양식대로 스킬로 1페이지 보고서를 만들어줘.
+양식대로 스킬로 1페이지 보고서를 만들어줘. 회사는 한빛산업.
 내용: 사내 교육 플랫폼 계약이 12월에 끝남. 재계약하면 8% 인상.
 B사로 바꾸면 연 7,800만 원, 모바일 지원, 6주면 전환. 11월 20일까지 승인 필요.
 ```
@@ -112,6 +117,7 @@ B사로 바꾸면 연 7,800만 원, 모바일 지원, 6주면 전환. 11월 20�
 - **우리 회사 색으로**: *"우리 회사 색(#0050A0)과 회사명으로 양식 10종 바꿔줘"* → 10종이 한 번에 바뀝니다
 
 예시 결과물: [PPT](docs/images/example-pptx.png) · [Word](docs/images/example-docx.png) · [examples/](examples/)
+실제 PowerPoint·Word에서 깨지지 않는지 10분 점검: [examples/00-office-check](examples/00-office-check/)
 
 ---
 
@@ -173,6 +179,8 @@ Claude는 FAIL이 사라질 때까지 스스로 고칩니다(최대 3회). 남�
 
 | 증상 | 해결 |
 |---|---|
+| 뭐가 되는지 모르겠음 | "양식대로 스킬 환경 점검해줘" (doctor.py) |
+| 꼬리말에 '회사명'이 나옴 | "회사는 ○○" 라고 말하기 (fill `--company`) |
 | 스킬 업로드 메뉴가 없음 | 유료 플랜 + '코드 실행' 켜기. 회사 계정은 관리자 확인 |
 | 미리보기 이미지가 안 나옴 | 정상 (LibreOffice 없는 환경). 파일과 검증은 그대로 됩니다 |
 | PowerPoint에서 보니 줄바꿈이 미리보기와 다름 | 미리보기는 배치 확인용. 최종은 PowerPoint 기준 |
@@ -210,7 +218,7 @@ Claude는 FAIL이 사라질 때까지 스스로 고칩니다(최대 3회). 남�
 yangsik/                ← 이 폴더가 스킬 본체 (zip으로 업로드)
 ├── SKILL.md            ← Claude가 읽는 사용 설명
 ├── workflows/          ← 모드별 절차 (등록·PPT·Word·수정·검사·테마)
-├── scripts/            ← fill · check · standardize · inspect_template · normalize · revise · extract · render · build_templates
+├── scripts/            ← fill · check · standardize · revise · extract · inspect_template · normalize · render · build_templates · make_company_skill · doctor
 ├── rules/              ← 검사 규칙 (회사가 수정 가능)
 ├── templates/          ← 표준 양식 10종 (template + profile.yaml + preview.png)
 ├── theme/default.yaml  ← 색·글꼴·회사명 (바꾸면 10종 일괄 변경)

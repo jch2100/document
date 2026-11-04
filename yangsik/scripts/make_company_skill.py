@@ -20,8 +20,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ys_common import SKILL_DIR, load_yaml  # noqa: E402
 
-SCRIPTS = ["ys_common.py", "ys_pptx.py", "ys_docx.py", "fill.py", "check.py", "revise.py", "extract.py", "render.py"]
-REFS = ["content-format.md", "writing-guide.md", "troubleshooting.md"]
+SCRIPTS = ["ys_common.py", "ys_pptx.py", "ys_docx.py", "fill.py", "check.py", "revise.py", "extract.py", "render.py", "doctor.py"]
+REFS = ["content-format.md", "writing-guide.md", "troubleshooting.md", "design-system.md"]
 
 TEMPLATE = """---
 name: {name}
@@ -31,7 +31,7 @@ description: "{company_doc} 작성 전용 스킬. {purpose} 트리거: {triggers
 # {title}
 
 이 폴더 = `SKILL_DIR`. 양식: `SKILL_DIR/{file}` · 계약서: `SKILL_DIR/profile.yaml`
-처음 한 번: `pip install -r SKILL_DIR/requirements.txt` (이미 있으면 생략)
+처음 한 번: `python SKILL_DIR/scripts/doctor.py` (환경 점검) — 필수 패키지가 없으면 `pip install -r SKILL_DIR/requirements.txt`
 
 ## 순서
 1. `profile.yaml` 을 읽는다 — 흐름, 칸(슬롯/스타일) 이름, 말투 규칙
@@ -39,7 +39,7 @@ description: "{company_doc} 작성 전용 스킬. {purpose} 트리거: {triggers
 3. 사용자 자료에서 **결론 한 문장**을 먼저 정한다 (두괄식)
 4. 내용 JSON 작성 — 형식 `references/content-format.md`, 키는 profile 의 이름 그대로
 5. 실행:
-   `python SKILL_DIR/scripts/fill.py --template SKILL_DIR/{file} --content 내용.json --out 결과.{ext} --profile SKILL_DIR/profile.yaml`
+   `python SKILL_DIR/scripts/fill.py --template SKILL_DIR/{file} --content 내용.json --out 결과.{ext} --profile SKILL_DIR/profile.yaml --company "{company}"`
 6. 검증 FAIL/WARN → 내용 JSON 고쳐 다시 실행 (최대 3회)
 7. 수정 요청이면 `scripts/revise.py` (전체 재생성 금지)
 8. 보고: 결과 파일 · 검증 판정 · 남은 경고 · 사람이 확인할 숫자
@@ -63,6 +63,7 @@ def main():
     ap.add_argument("--skill-name", required=True, help="영문 소문자·숫자·하이픈 (예: acme-monthly-report)")
     ap.add_argument("--triggers", default="", help="사람들이 실제로 하는 말, 쉼표로 구분")
     ap.add_argument("--out", default="dist")
+    ap.add_argument("--company", help="꼬리말 회사명 (기본: 브랜드 theme.yaml 의 company)")
     a = ap.parse_args()
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]{1,62}", a.skill_name):
         sys.exit("스킬 이름은 영문 소문자·숫자·하이픈만 (claude.ai 규칙). 예: acme-monthly-report")
@@ -91,7 +92,14 @@ def main():
     flow = prof.get("storyline") or prof.get("outline") or []
     rules = (prof.get("writing", {}).get("rules") or []) + [f"금지어: {', '.join(prof['writing']['banned'])}"] if prof.get("writing", {}).get("banned") else (prof.get("writing", {}).get("rules") or [])
     trig = ", ".join(f"'{t.strip()}'" for t in a.triggers.split(",") if t.strip()) or "'" + prof.get("title", "") + " 만들어줘'"
-    md = TEMPLATE.format(
+    company = a.company
+    if company is None:
+        for cand in (pdir / "theme.yaml", pdir.parent.parent / "theme.yaml"):
+            if cand.exists():
+                company = load_yaml(cand).get("company", "")
+                break
+    company = company or ""
+    md = TEMPLATE.format(company=company,
         name=a.skill_name, company_doc=prof.get("title", a.skill_name), purpose=prof.get("purpose", "").rstrip(".") + ".",
         triggers=trig, title=prof.get("title", a.skill_name), file=tpl.name, ext=tpl.suffix.lstrip("."),
         flow="\n".join(f"{i}. {x}" for i, x in enumerate(flow, 1)) or "- profile.yaml 참고",

@@ -388,12 +388,44 @@ def is_yangsik(prs):
     return "yangsik" in (prs.core_properties.keywords or "")
 
 
+# 내용이 적어 영역이 많이 빌 때 글자를 한 단계(+2pt) 키울 칸들 (타입 스케일 안: 16→18, 14→16)
+GROW = {
+    "본문": (["본문"], 0.40, 20),
+    "2단비교": (["좌측본문", "우측본문"], 0.35, 18),
+    "3단카드": (["카드1본문", "카드2본문", "카드3본문"], 0.30, 17),
+    "프로세스": (["단계1본문", "단계2본문", "단계3본문", "단계4본문"], 0.30, 16),
+}
+
+
+def _grow_sparse(slide, prs, _chk, ty):
+    spec = GROW.get(slide.slide_layout.name)
+    if not spec:
+        return
+    names, ratio, cap = spec
+    shapes = [s for s in slide.placeholders if s.name in names and s.has_text_frame and s.text_frame.text.replace("\u200b", "").strip()]
+    if not shapes:
+        return
+    zone = Z_BOT - Z_TOP
+    need = max(_chk.estimate_height(s, prs, ty) for s in shapes)
+    if need >= zone * ratio:
+        return
+    for s in shapes:
+        chain = _chk._inherit_chain(s, prs)
+        for p in s.text_frame.paragraphs:
+            base = _chk._resolve(chain, prs, p.level, "sz", False)
+            new = min(base + 2, cap - 2 * p.level)
+            if new > base:
+                for r in p.runs:
+                    r.font.size = Pt(new)
+
+
 def balance(slide, prs):
     stacks = BALANCE.get(slide.slide_layout.name)
     if not stacks:
         return
     import check as _chk
     ty = _chk.Checker().ty
+    _grow_sparse(slide, prs, _chk, ty)
     by_name = {s.name: s for s in slide.placeholders}
     for spec in stacks:
         rows, gaps = [], []

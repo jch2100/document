@@ -148,6 +148,21 @@ with tempfile.TemporaryDirectory() as t:
     if "8CC63F" not in th.upper():
         fails.append("브랜드 강조색(원본 연두)이 유지되지 않음")
 
+    print("10) 환경 점검 · 회사 전용 스킬(브랜드) · 점검 파일")
+    run(SK / "scripts/doctor.py")
+    run(SK / "scripts/make_company_skill.py", t / "profiles/g/pptx/01-exec-report", "--skill-name", "g-exec", "--out", t / "cs")
+    cs = t / "cs/g-exec"
+    if "--company \"그린텍\"" not in (cs / "SKILL.md").read_text(encoding="utf-8"):
+        fails.append("전용 스킬 SKILL.md 에 회사명 없음")
+    r = run(cs / "scripts/fill.py", "--template", cs / "template.pptx", "--content", ROOT / "examples/01-exec-report/content.json",
+            "--out", t / "cs.pptx", "--profile", cs / "profile.yaml", "--company", "그린텍")
+    if "PASS" not in r.stdout:
+        fails.append("전용 스킬로 채우기 PASS 아님")
+    for js, tpl, ext in (("all-layouts.json", "pptx/01", "pptx"), ("all-blocks.json", "docx/01", "docx")):
+        r = run(SK / "scripts/fill.py", "--template", tpl, "--content", ROOT / "examples/00-office-check" / js, "--out", t / f"oc.{ext}", "--company", "점검회사")
+        if "FAIL" in r.stdout:
+            fails.append(f"점검 파일 {ext} FAIL")
+
 print()
 if fails:
     print(f"실패 {len(fails)}건:", fails)

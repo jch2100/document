@@ -9,7 +9,8 @@ description: "양식대로 — 회사 양식(또는 기본 제공 표준 양식 
 PPT는 컨설팅 스타일(액션 타이틀 · 12단 그리드 · 타입 스케일 · 출처 필수) — `references/design-system.md`
 
 이 파일이 있는 폴더를 `SKILL_DIR` 이라 부른다. 모든 스크립트는 `python SKILL_DIR/scripts/<이름>.py` 로 실행한다.
-처음 한 번: `pip install -r SKILL_DIR/requirements.txt` (이미 있으면 생략. 실패해도 python-pptx·python-docx·pyyaml이 있으면 동작)
+처음 한 번: `python SKILL_DIR/scripts/doctor.py` — 무엇이 되는지 점검. 필수 패키지가 없으면 `pip install -r SKILL_DIR/requirements.txt`
+사용자가 "환경 점검해줘"라고 하면 doctor 결과를 그대로 요약해 준다.
 
 ## 1. 요청 → 모드 판별
 
