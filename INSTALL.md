@@ -11,7 +11,7 @@
 
 ## A. claude.ai / 데스크톱 앱
 
-1. Releases에서 `yangsik.zip` 받기 (압축 풀지 않음)
+1. [최신 Release](https://github.com/jch2100/document/releases/latest)에서 `yangsik-버전.zip` 받기 (압축 풀지 않음)
    - 직접 만들려면: 저장소 루트에서 `python tests/make_dist.py` → `dist/yangsik.zip`
 2. 설정 → 기능 → **스킬** → 스킬 업로드 → zip 선택
 3. 목록에서 `yangsik` 이 켜져 있는지 확인
