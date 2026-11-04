@@ -49,7 +49,40 @@ def load_theme(path=None) -> dict:
                 theme[k] = v
     for k, v in theme["colors"].items():
         theme["colors"][k] = str(v).lstrip("#").upper()
+    C = theme["colors"]
+    # 강조색 파생값: 작은 글씨용(흰 배경 대비 4.5:1)과 강조색 바탕 위 글자색
+    if not C.get("accent_text"):
+        C["accent_text"] = readable_on_white(C["accent"], 4.5)
+    C["on_accent"] = "FFFFFF" if contrast(C["accent"], "FFFFFF") >= 3.0 else C["primary"]
+    if theme.get("logo") and not Path(str(theme["logo"])).is_absolute() and path:
+        cand = Path(path).resolve().parent / theme["logo"]
+        if cand.exists():
+            theme["logo"] = str(cand)
     return theme
+
+
+def _lum(h):
+    def ch(c):
+        c = c / 255
+        return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+    r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
+    return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b)
+
+
+def contrast(a, b):
+    la, lb = sorted((_lum(a), _lum(b)), reverse=True)
+    return (la + 0.05) / (lb + 0.05)
+
+
+def readable_on_white(h, target=4.5):
+    import colorsys
+    r, g, b = (int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
+    hh, l, s = colorsys.rgb_to_hls(r, g, b)
+    out = h
+    while contrast(out, "FFFFFF") < target and l > 0.05:
+        l -= 0.03
+        out = "".join(f"{round(v * 255):02X}" for v in colorsys.hls_to_rgb(hh, l, s))
+    return out
 
 
 BOLD_RE = re.compile(r"(\*\*.+?\*\*)")

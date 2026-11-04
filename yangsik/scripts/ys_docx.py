@@ -437,6 +437,18 @@ def add_table(doc, spec, theme, total_cm=None):
         trPr.append(parse_xml(f'<w:tblHeader {nsdecls("w")}/>'))
     first_col_label = spec.get("label_col", False)
     hl = spec.get("highlight_col", spec.get("강조열"))
+    try:
+        from ys_pptx import numeric_columns
+        numcols = numeric_columns(rows, ncol)
+    except Exception:
+        numcols = [False] * ncol
+    if ncol:
+        numcols[0] = False
+    if header:
+        for i in range(ncol):
+            if numcols[i]:
+                for p in t.rows[0].cells[i].paragraphs:
+                    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     accent = theme["colors"].get("accent", C["primary"])
     if header and hl is not None and hl < ncol:
         hc = t.rows[0].cells[hl]
@@ -450,7 +462,7 @@ def add_table(doc, spec, theme, total_cm=None):
                 for p in cells[i].paragraphs:
                     for r in p.runs:
                         r.bold = True
-            elif i > 0 and _is_num(row[i] if i < len(row) else ""):
+            if numcols[i]:
                 for p in cells[i].paragraphs:
                     p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
             if first_col_label and i == 0:

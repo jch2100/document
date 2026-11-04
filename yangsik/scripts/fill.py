@@ -36,10 +36,20 @@ def resolve_template(spec: str) -> Path:
             found = next(iter(sorted(d.glob("template.*"))), None) if d.is_dir() else None
             if found:
                 return found
-    if "/" in spec:
-        kind, name = spec.split("/", 1)
-        return find_template(kind, name)
-    sys.exit(f"양식 경로를 찾을 수 없음: {spec}")
+    # '그린텍/pptx/01' → profiles/그린텍/pptx/01-*/template.pptx (브랜드 표준화 결과)
+    parts = spec.split("/")
+    if len(parts) == 3:
+        for base in (Path("profiles"), SKILL_DIR / "profiles"):
+            d = base / parts[0] / parts[1]
+            if d.is_dir():
+                for sub in sorted(d.iterdir()):
+                    if sub.is_dir() and (sub.name == parts[2] or sub.name.startswith(parts[2] + "-")):
+                        found = next(iter(sorted(sub.glob("template.*"))), None)
+                        if found:
+                            return found
+    if len(parts) == 2 and parts[0] in ("pptx", "docx"):
+        return find_template(parts[0], parts[1])
+    sys.exit(f"양식을 찾을 수 없음: {spec}\n  기본 양식: pptx/01 · docx/01-1page-report\n  등록 양식: <회사>/pptx/01 · 경로 직접 지정\n  목록: python scripts/list_templates.py")
 
 
 def main():

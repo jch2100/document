@@ -102,7 +102,7 @@ def _rpr(sz=None, b=False, color=None, tag="a:defRPr"):
 def _lvl(n, sz, color=None, b=False, bullet=None, mar=0.0, ind=0.0, algn="l", spc_before=0, line=None, bu_color=None):
     bu = "<a:buNone/>"
     if bullet == "auto":
-        bu = '<a:buClr><a:schemeClr val="accent2"/></a:buClr><a:buSzPct val="100000"/><a:buFont typeface="+mj-lt"/><a:buAutoNum type="arabicPeriod"/>'
+        bu = '<a:buClr><a:schemeClr val="accent6"/></a:buClr><a:buSzPct val="100000"/><a:buFont typeface="+mj-lt"/><a:buAutoNum type="arabicPeriod"/>'
     elif bullet:
         buc = bu_color or '<a:schemeClr val="tx2"/>'
         bu = f'<a:buClr>{buc}</a:buClr><a:buSzPct val="80000"/><a:buFont typeface="Arial"/><a:buChar char="{bullet}"/>'
@@ -186,7 +186,7 @@ def textbox(sid, name, x, y, w, h, text, sz, color, b=False, algn="l", anchor="c
 # 레이아웃 정의 (14종)
 # =====================================================================
 def _tracker(sid=40):
-    return ph(sid, "트래커", "body", 13, M, Y_TRACKER, CW, H_TRACKER, PLAIN(TYPE["tracker"], "accent2", b=True),
+    return ph(sid, "트래커", "body", 13, M, Y_TRACKER, CW, H_TRACKER, PLAIN(TYPE["tracker"], "accent6", b=True),
               "섹션 이름 (예: 2. 현황 분석)", anchor="b")
 
 
@@ -237,7 +237,7 @@ def layout_defs(theme):
     # 3 섹션 — 흰 배경, 큰 번호 + 제목
     defs.append(dict(name="섹션", master_shapes=False, bg=None, shapes=[
         rect(20, "좌측선", M, 1.2, 0.06, 5.1, SCH("accent2")),
-        ph(3, "번호", "body", 13, M + 0.4, 2.3, 4, 1.0, PLAIN(TYPE["number"] - 6, "accent2", b=True, line=100), "01", anchor="b"),
+        ph(3, "번호", "body", 13, M + 0.4, 2.3, 4, 1.0, PLAIN(TYPE["number"] - 6, "accent6", b=True, line=100), "01", anchor="b"),
         ph(2, "제목", "title", None, M + 0.4, 3.4, col(1, 10)[1], 1.0, PLAIN(TYPE["section"], "tx2", b=True, line=108), "섹션 제목"),
         ph(4, "설명", "body", 14, M + 0.4, 4.5, col(1, 10)[1], 0.8, PLAIN(TYPE["lead"], "accent4", line=125), "이 섹션이 답하는 질문 한 줄"),
     ]))
@@ -271,8 +271,9 @@ def layout_defs(theme):
     for i in range(4):
         x, w = col(1 + i * 3, 3)
         geom = "homePlate" if i == 0 else "chevron"
+        on = WHITE if (i < 3 or C.get("on_accent", "FFFFFF") == "FFFFFF") else _fill(C["on_accent"])
         shapes.append(ph(4 + i * 2, f"단계{i+1}제목", "body", 30 + i * 2, x, P_TOP, w + 0.12, 0.72,
-                         PLAIN(TYPE["head"], WHITE, b=True, line=100), f"{i+1}. 단계",
+                         PLAIN(TYPE["head"], on, b=True, line=100), f"{i+1}. 단계",
                          anchor="ctr", ins=(0.35 if i else 0.2, 0.04, 0.3, 0.04), fill=SCH("tx2" if i < 3 else "accent2"), geom=geom))
         shapes.append(ph(5 + i * 2, f"단계{i+1}본문", "body", 31 + i * 2, x, P_TOP + 0.97, w, Z_BOT - P_TOP - 0.97,
                          BODY_LEVELS(TYPE["sub"]), "활동·산출물", ins=(0.05, 0, 0.05, 0)))
@@ -307,14 +308,14 @@ def layout_defs(theme):
         ph(4, "차트", "chart", 1, cx, Z_TOP, cw, zh, "", "차트를 넣으세요"),
         rect(30, "시사점배경", sx, Z_TOP, sw, zh, C["light"]),
         rect(31, "시사점선", sx, Z_TOP, 0.06, zh, SCH("accent2")),
-        textbox(32, "시사점라벨", sx + 0.3, Z_TOP + 0.25, sw - 0.5, 0.3, "시사점", TYPE["sub2"], C["accent"], b=True, anchor="t"),
+        textbox(32, "시사점라벨", sx + 0.3, Z_TOP + 0.25, sw - 0.5, 0.3, "시사점", TYPE["sub2"], C.get("accent_text", C["accent"]), b=True, anchor="t"),
         ph(5, "해설", "body", 14, sx + 0.3, Z_TOP + 0.7, sw - 0.5, zh - 0.95, BODY_LEVELS(TYPE["sub"] + 1), "차트에서 읽어야 할 점", anchor="t"),
     ]))
     # 11 빅넘버 — 큰 숫자 + 설명 (6단) | 근거 (6단)
     lx, lw = col(1, 6)
     rx, rw = col(7, 6)
     defs.append(content("빅넘버", [
-        ph(4, "숫자", "body", 50, lx, Z_TOP, lw, 1.4, PLAIN(TYPE["number"], "accent2", b=True, line=100), "42%", anchor="b"),
+        ph(4, "숫자", "body", 50, lx, Z_TOP, lw, 1.4, PLAIN(TYPE["number"], "accent6", b=True, line=100), "42%", anchor="b"),
         ph(5, "설명", "body", 51, lx, Z_TOP + 1.5, lw, 1.2, PLAIN(TYPE["lead"], "tx2", b=True, line=120), "숫자의 의미 한 줄"),
         rect(30, "구분선", rx - GUTTER / 2 - 0.01, Z_TOP + 0.6, 0.02, zh - 1.2, RULE_GRAY),
         ph(6, "본문", "body", 1, rx + 0.2, Z_TOP, rw - 0.2, zh, BODY_LEVELS(TYPE["body"]), "근거 2~4개", anchor="t"),
@@ -323,7 +324,7 @@ def layout_defs(theme):
     x, w = col(1, 10)
     defs.append(dict(name="핵심메시지", master_shapes=True, bg=None, shapes=[
         rect(20, "좌측선", M, 1.6, 0.06, 4.3, SCH("accent2")),
-        ph(2, "제목", "title", None, x + 0.4, 1.9, w, 0.4, PLAIN(TYPE["sub2"] + 1, "accent2", b=True), "요약", anchor="b"),
+        ph(2, "제목", "title", None, x + 0.4, 1.9, w, 0.4, PLAIN(TYPE["sub2"] + 1, "accent6", b=True), "요약", anchor="b"),
         ph(3, "핵심메시지", "body", 13, x + 0.4, 2.45, w, 2.0, PLAIN(TYPE["statement"], "tx2", b=True, line=125), "가장 중요한 결론 한두 문장"),
         ph(4, "보조설명", "body", 14, x + 0.4, 4.7, w, 1.0, PLAIN(TYPE["lead"], "accent4", line=130), "근거 또는 요청 한 줄"),
         _sldnum(),
@@ -434,7 +435,7 @@ def _set_theme(prs, theme):
     cs.set("name", "양식대로")
     mapping = {"dk1": C["text"], "lt1": "FFFFFF", "dk2": C["primary"], "lt2": C["light"],
                "accent1": C["primary"], "accent2": C["accent"], "accent3": C["highlight"],
-               "accent4": C["muted"], "accent5": "9AA3B2", "accent6": "C9CED6",
+               "accent4": C["muted"], "accent5": "9AA3B2", "accent6": C.get("accent_text", C["accent"]),
                "hlink": C["accent"], "folHlink": C["muted"]}
     for tag, val in mapping.items():
         el = cs.find(f"a:{tag}", NS)
@@ -628,6 +629,30 @@ def is_number_like(v):
 NUM_RE = re.compile(r"^$")  # 하위 호환 (사용 안 함)
 
 
+def numeric_columns(rows, n_cols):
+    """열 단위 판정(PPT·Word 공통): 본문 칸의 절반 이상이 숫자면 그 열 전체(머리글 포함) 오른쪽 정렬.
+    '-', '–', 빈칸은 판정에서 뺀다. **굵게** 표시는 지우고 본다."""
+    out = []
+    for c in range(n_cols):
+        vals = [str(r[c]).replace("**", "").strip() for r in rows if c < len(r)]
+        vals = [v for v in vals if v not in ("", "-", "–", "—")]
+        out.append(bool(vals) and sum(is_number_like(v) for v in vals) >= max(1, len(vals) * 0.5))
+    return out
+
+
+def _lum(h):
+    def ch(c):
+        c = c / 255
+        return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+    r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
+    return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b)
+
+
+def _on(bg, dark):
+    """배경 bg 위 글자색: 흰색 대비 3:1 이상이면 흰색, 아니면 진한 색."""
+    return "FFFFFF" if (1.05 / (_lum(bg) + 0.05)) >= 3.0 else dark
+
+
 def _tint(hexcolor, amount):
     """흰색과 섞기: amount=0.88 → 88% 흰색"""
     r, g, b = (int(hexcolor[i:i + 2], 16) for i in (0, 2, 4))
@@ -678,10 +703,9 @@ def fill_table(ph_shape, spec, prs=None, yangsik=True):
     avail = ph_shape.height            # 표 영역 높이 (insert 후에는 행 수 기준으로 바뀜)
     gf = ph_shape.insert_table(max(len(all_rows), 1), n_cols)
     table = gf.table
-    numeric_col = []
-    for c in range(n_cols):
-        vals = [str(r[c]).strip() for r in rows if c < len(r) and str(r[c]).strip() not in ("", "-")]
-        numeric_col.append(bool(vals) and sum(is_number_like(v) for v in vals) >= max(1, len(vals) * 0.6))
+    numeric_col = numeric_columns(rows, n_cols)
+    if n_cols:
+        numeric_col[0] = False            # 첫 열은 항목 이름
     widths = spec.get("col_widths") or spec.get("열너비")
     total = gf.width
     if widths:
@@ -725,7 +749,7 @@ def fill_table(ph_shape, spec, prs=None, yangsik=True):
                     if yangsik:
                         r.font.color.rgb = RGBColor.from_string(C_TX2 if is_head else "222222")
                         if hl is not None and c_i == hl:
-                            r.font.color.rgb = RGBColor.from_string("FFFFFF" if is_head else C_TX2)
+                            r.font.color.rgb = RGBColor.from_string(_on(C_ACC, C_TX2) if is_head else C_TX2)
                             r.font.bold = True
             if yangsik:
                 if hl is not None and c_i == hl:
@@ -872,7 +896,7 @@ def get_layout(prs, name):
     raise KeyError(f"레이아웃 '{name}' 없음. 사용 가능: {names}")
 
 
-SKIP_KEYS = {"layout", "레이아웃", "노트", "notes", "id"}
+SKIP_KEYS = {"layout", "레이아웃", "노트", "notes", "id", "대등", "equal"}
 
 
 def _migrate(spec, slots):
@@ -936,6 +960,13 @@ def add_slide(prs, spec, base_dir=None, warn=print):
                 p._p.get_or_add_pPr().insert(0, parse_xml(f'<a:buNone {NSDECL}/>'))
         else:
             shp._element.getparent().remove(shp._element)
+    if layout.name == "2단비교" and (spec.get("대등") or spec.get("equal")):
+        for s_ in slide.placeholders:     # 대등한 비교: 양쪽 머리띠를 같은 색으로
+            if s_.name == "좌측제목":
+                left, top, w, h = s_.left, s_.top, s_.width, s_.height
+                s_.left, s_.top, s_.width, s_.height = left, top, w, h
+                s_.fill.solid()
+                s_.fill.fore_color.rgb = RGBColor.from_string(_scheme_rgb(prs, "dk2"))
     _add_slide_number(slide, layout)
     if yangsik:
         balance(slide, prs)

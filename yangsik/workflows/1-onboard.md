@@ -16,6 +16,8 @@
 ```
 python SKILL_DIR/scripts/standardize.py <회사 pptx/docx 여러 개 가능> --name <회사> --company "<회사명>" --out profiles
 ```
+- 결과는 **현재 작업 폴더의** `profiles/<회사>/` 에 생긴다. 이후 `--template <회사>/pptx/01` 처럼 짧게 부를 수 있다 (`list_templates.py` 에 나옴).
+- 강조색은 원본 색을 그대로 쓰고, 작은 글씨에만 읽히도록 어두운 버전이 따로 쓰인다(brand.md 에 설명).
 1. `profiles/<회사>/brand.md` 를 읽고 **무엇을 어디서 뽑았는지** 사용자에게 설명 (대표색·강조색·글꼴·로고)
 2. `brand.png`(색 견본)와 `pptx/*/preview.png` 를 보여 준다
 3. 틀리면 옵션으로 다시: `--primary 006140 --accent 6C9A2E --font "나눔고딕" --logo 로고.png`

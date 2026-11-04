@@ -19,7 +19,7 @@
     {"find": "붙임", "delete": true},
     {"after": "기대 효과", "blocks": [{"b": ["추가 효과"]}]}
   ]}
-슬라이드 번호는 '수정 전' 기준이 아니라 각 작업 시점 기준입니다 (위에서부터 순서대로 적용).
+슬라이드 번호는 모두 '수정 전 파일' 기준입니다 (작업 순서와 무관 — 앞에서 장을 넣거나 빼도 번호가 밀리지 않음).
 변경 내역은 화면과 *_변경내역.md 로 남깁니다.
 """
 from __future__ import annotations
@@ -77,12 +77,32 @@ def revise_pptx(path, ops, out, base_dir):
     import ys_pptx
     prs = Presentation(str(path))
     sldIdLst = prs.slides._sldIdLst
-    n = len(prs.slides)
+    original = list(sldIdLst)            # 슬라이드 번호는 항상 '수정 전' 기준으로 해석
+    n = len(original)
+
+    def cur_index(orig_no):
+        el = original[orig_no - 1]
+        return list(sldIdLst).index(el) + 1 if el in list(sldIdLst) else None
+
     for k, op in enumerate(ops, 1):
         try:
-            if "slide" in op and not (1 <= op["slide"] <= len(prs.slides)):
-                failed.append(f"작업 {k}: 슬라이드 {op['slide']} 없음 (현재 {len(prs.slides)}장)")
-                continue
+            for key in ("slide", "insert_after", "move"):
+                if key in op and not (1 <= op[key] <= n):
+                    raise ValueError(f"{key}={op[key]}: 수정 전 파일은 {n}장")
+            if "slide" in op:
+                ci = cur_index(op["slide"])
+                if ci is None:
+                    failed.append(f"작업 {k}: 슬라이드 {op['slide']}는 앞 작업에서 삭제됨")
+                    continue
+                op = dict(op, _orig=op["slide"], slide=ci)
+            if "insert_after" in op:
+                ci = cur_index(op["insert_after"])
+                if ci is None:
+                    failed.append(f"작업 {k}: 슬라이드 {op['insert_after']}는 앞 작업에서 삭제됨")
+                    continue
+                op = dict(op, _orig=op["insert_after"], insert_after=ci)
+            if "move" in op:
+                op = dict(op, _orig=op["move"], move=cur_index(op["move"]))
             if "slide" in op and "slot" in op:
                 slide = prs.slides[op["slide"] - 1]
                 name = op["slot"]
@@ -91,7 +111,7 @@ def revise_pptx(path, ops, out, base_dir):
                 slots = ys_pptx.layout_slots(slide.slide_layout)
                 if target is None and name not in slots:
                     names = [s.name for s in slide.shapes if s.is_placeholder or s.name in slots]
-                    failed.append(f"작업 {k}: 슬라이드 {op['slide']}에 '{name}' 칸 없음 (있는 것: {names})")
+                    failed.append(f"작업 {k}: 슬라이드 {op['_orig']}에 '{name}' 칸 없음 (있는 것: {names})")
                     continue
                 if is_text or (target is None and slots[name][1] not in ("TABLE", "CHART", "PICTURE")):
                     if target is None:  # 비워서 지워졌던 글 칸 → 다시 꺼내기
@@ -101,31 +121,31 @@ def revise_pptx(path, ops, out, base_dir):
                         target.name = name
                     before = target.text_frame.text
                     ys_pptx.set_text(target, op["value"])
-                    changes.append(f"슬라이드 {op['slide']} · {name}: \"{_clip(before)}\" → \"{_clip(target.text_frame.text)}\"")
+                    changes.append(f"슬라이드 {op['_orig']} · {name}: \"{_clip(before)}\" → \"{_clip(target.text_frame.text)}\"")
                 else:
                     err = _replace_graphic(prs, slide, name, op["value"], base_dir)
                     if err:
-                        failed.append(f"작업 {k}: 슬라이드 {op['slide']} · {name}: {err}")
+                        failed.append(f"작업 {k}: 슬라이드 {op['_orig']} · {name}: {err}")
                         continue
-                    changes.append(f"슬라이드 {op['slide']} · {name}: 새 내용으로 교체")
+                    changes.append(f"슬라이드 {op['_orig']} · {name}: 새 내용으로 교체")
                 if ys_pptx.is_yangsik(prs):
                     ys_pptx.balance(slide, prs)
             elif "slide" in op and op.get("delete"):
                 sld = list(sldIdLst)[op["slide"] - 1]
                 prs.part.drop_rel(sld.get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"))
                 sldIdLst.remove(sld)
-                changes.append(f"슬라이드 {op['slide']} 삭제")
+                changes.append(f"슬라이드 {op['_orig']} 삭제")
             elif "insert_after" in op:
                 ys_pptx.add_slide(prs, op["spec"], base_dir)
                 new = list(sldIdLst)[-1]
                 sldIdLst.remove(new)
                 sldIdLst.insert(op["insert_after"], new)
-                changes.append(f"슬라이드 {op['insert_after']} 뒤에 '{op['spec'].get('제목', op['spec'].get('layout'))}' 추가")
+                changes.append(f"슬라이드 {op['_orig']} 뒤에 '{op['spec'].get('제목', op['spec'].get('layout'))}' 추가")
             elif "move" in op:
                 el = list(sldIdLst)[op["move"] - 1]
                 sldIdLst.remove(el)
                 sldIdLst.insert(op["to"] - 1, el)
-                changes.append(f"슬라이드 {op['move']} → {op['to']}번 위치로 이동")
+                changes.append(f"슬라이드 {op['_orig']} → {op['to']}번 위치로 이동")
             else:
                 failed.append(f"작업 {k}: 알 수 없는 형식 {op}")
         except Exception as e:  # 한 작업 실패가 나머지를 막지 않게
@@ -213,6 +233,10 @@ def main():
         r = render.render(out, sheet=True)
         if r and r.get("sheet"):
             print(f"[미리보기] {r['sheet']}")
+    if failed:
+        print(f"\n⚠ 부분 적용: 요청 {len(ops)}개 중 {len(failed)}개 미반영 — 검증 PASS 와 별개로 사용자에게 알릴 것")
+        for f in failed:
+            print("  ✗", f)
     sys.exit(2 if failed else 0)
 
 

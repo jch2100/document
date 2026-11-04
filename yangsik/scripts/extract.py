@@ -18,6 +18,18 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 
+def _runs_md(runs):
+    """직접 굵게 지정된 글자 조각 → **굵게** (양식이 원래 굵은 칸은 그대로)"""
+    out = ""
+    for r in runs:
+        t = r.text
+        if t.strip() and r.font.bold:
+            out += f"**{t}**"
+        else:
+            out += t
+    return out.replace("****", "")
+
+
 def _nest(paragraphs):
     """[(level, text)] → ['a', ['a-1'], 'b']"""
     root = []
@@ -66,7 +78,7 @@ def extract_pptx(path):
                 spec[shp.name] = {"type": "bar", "categories": [str(c) for c in plot.categories],
                                   "series": {se.name: list(se.values) for se in plot.series}}
             elif shp.has_text_frame:
-                paras = [(p.level, "".join(r.text for r in p.runs).replace("\u200b", "")) for p in shp.text_frame.paragraphs]
+                paras = [(p.level, _runs_md(p.runs).replace("\u200b", "")) for p in shp.text_frame.paragraphs]
                 paras = [x for x in paras if x[1].strip()]
                 if not paras:
                     continue

@@ -280,14 +280,23 @@ def decide(found, overrides):
         cands = [c for c in ranked if c != primary and 0.25 <= hls(c)[1] <= 0.65 and sat(c) > 0.35]
         # 대표색과 색상이 비슷하면 '같은 계열의 밝은 색', 다르면 그 색
         accent = cands[0] if cands else with_light(primary, 0.48)
-    if contrast(accent, "FFFFFF") < 4.5:   # 트래커·숫자 등 작은 글씨에도 쓰므로 흰 배경 대비 4.5:1 이상
-        before = accent
-        _h, l, _s = hls(accent)
-        while contrast(accent, "FFFFFF") < 4.5 and l > 0.1:
-            l -= 0.03
-            accent = with_light(accent, l)
-        notes.append(f"강조색 {before} → {accent}: 작은 글씨 가독성 기준(흰 배경 대비 4.5:1)을 맞추려고 어둡게")
-        notes.append(f"강조색 {accent}: " + ("두 번째로 많이 쓴 선명한 색" if cands else "대표색을 밝게 한 같은 계열"))
+    # 강조색은 원본 그대로(채우기·막대·머리띠). 작은 글씨에는 대비를 맞춘 어두운 버전(accent_text)을 따로 쓴다
+    from ys_common import readable_on_white
+    accent_text = readable_on_white(accent, 4.5)
+    if accent_text != accent:
+        notes.append(f"강조색 {accent} 은 그대로 쓰고, 작은 글씨(트래커 등)에만 대비 4.5:1 버전 {accent_text} 사용")
+    # 대표색과 너무 비슷하면 강조가 안 보임 → 다른 후보 또는 밝게
+    if contrast(accent, primary) < 1.8:
+        alt = [c for c in ranked if c not in (primary, accent) and contrast(c, primary) >= 1.8 and sat(c) > 0.3]
+        if alt and not overrides.get("accent"):
+            notes.append(f"강조색 {accent} 이 대표색과 비슷해 {alt[0]} 로 바꿈 (강조가 보이도록)")
+            accent = alt[0]
+            accent_text = readable_on_white(accent, 4.5)
+        else:
+            lighter = with_light(accent, min(hls(primary)[1] + 0.35, 0.6))
+            notes.append(f"강조색 {accent} 이 대표색과 비슷해 밝게 조정 → {lighter}")
+            accent = lighter
+            accent_text = readable_on_white(accent, 4.5)
     light = with_light(primary, 0.965)
     hh, _l, s = hls(light)
     light = rgb2hex(*colorsys.hls_to_rgb(hh, 0.965, min(s, 0.3)))
@@ -314,7 +323,7 @@ def decide(found, overrides):
     logo = str(Path(logo).resolve()) if logo else None
     company = overrides.get("company") or next((f["company"] for f in found if f["company"]), "") or "회사명"
     return {"company": company, "fonts": {"korean": font, "latin": font},
-            "colors": {"primary": primary, "accent": accent, "highlight": "E07A1F", "text": "1F2937",
+            "colors": {"primary": primary, "accent": accent, "accent_text": accent_text, "highlight": "E07A1F", "text": "1F2937",
                        "muted": "6B7280", "light": light},
             "logo": logo,
             "top_band": any(f.get("band") for f in found),
@@ -324,7 +333,7 @@ def decide(found, overrides):
 def swatch(theme, out):
     from PIL import Image, ImageDraw, ImageFont
     C = theme["colors"]
-    keys = ["primary", "accent", "light", "text", "muted", "highlight"]
+    keys = ["primary", "accent", "accent_text", "light", "text", "muted"]
     im = Image.new("RGB", (len(keys) * 170 + 20, 150), "white")
     d = ImageDraw.Draw(im)
     try:

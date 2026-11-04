@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from ys_common import TEMPLATES_DIR, load_yaml  # noqa: E402
+from ys_common import SKILL_DIR, TEMPLATES_DIR, load_yaml  # noqa: E402
 
 
 def main():
@@ -26,16 +26,20 @@ def main():
                 continue
             p = load_yaml(pf)
             print(f"  {kind + '/' + d.name:<26}{p['title']:<16}{p['purpose'][:38]:<40}{p['length']}")
-    prof_dir = Path(a.profiles)
-    if prof_dir.exists():
-        rows = [d for d in sorted(prof_dir.iterdir()) if (d / "profile.yaml").exists()]
-        if rows:
-            print("\n■ 등록한 회사 양식\n")
-            for d in rows:
-                p = load_yaml(d / "profile.yaml")
-                tpl = next(d.glob("template.*"), None)
-                print(f"  {str(tpl or d):<40}{p.get('title', ''):<20}등급 {p.get('grade', '?')}")
-    print("\n사용 예: python scripts/fill.py --template pptx/01 --content 내용.json --out 결과.pptx")
+    shown = False
+    for base in dict.fromkeys([Path(a.profiles), SKILL_DIR / "profiles"]):
+        if not base.exists():
+            continue
+        for pf in sorted(base.glob("**/profile.yaml")):
+            if not shown:
+                print("\n■ 등록한 회사 양식\n")
+                shown = True
+            p = load_yaml(pf)
+            rel = pf.parent.relative_to(base)
+            short = "/".join(rel.parts[:2] + (rel.parts[2].split("-")[0],)) if len(rel.parts) == 3 else str(rel)
+            print(f"  {short:<26}{p.get('title', '')[:30]:<32}{pf.parent}")
+    print("\n사용 예: python scripts/fill.py --template pptx/01 --content 내용.json --out 결과.pptx --company \"회사명\"")
+    print("        등록 양식: --template 그린텍/pptx/01")
 
 
 if __name__ == "__main__":

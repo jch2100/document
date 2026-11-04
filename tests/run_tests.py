@@ -126,6 +126,28 @@ with tempfile.TemporaryDirectory() as t:
     if "회사명" in dd.sections[0].header.paragraphs[0].text:
         fails.append("docx --company 미적용")
 
+    print("9) 2차 QA 회귀: 원본 번호 기준 revise · 짧은 양식 이름 · 강조색 유지")
+    ops2 = t / "ops2.json"
+    ops2.write_text(json.dumps({"ops": [
+        {"insert_after": 2, "spec": {"layout": "핵심메시지", "제목": "결론", "핵심메시지": "B안 추천"}},
+        {"slide": 6, "slot": "표", "value": {"header": ["구분", "A", "B"], "rows": [["비용", "1억 원", "**2억 원**"]], "highlight_col": 2}}]},
+        ensure_ascii=False), encoding="utf-8")
+    r = run(SK / "scripts/revise.py", base, "--ops", ops2, "--out", t / "rv2.pptx")
+    if "적용 2 / 요청 2" not in r.stdout:
+        fails.append("revise: 앞에서 장을 넣은 뒤 원본 번호로 표 수정 실패")
+    import shutil
+    shutil.copytree(t / "profiles/g", Path.cwd() / "profiles/__qa_g", dirs_exist_ok=True)
+    try:
+        r = run(SK / "scripts/fill.py", "--template", "__qa_g/pptx/01", "--content", ROOT / "examples/01-exec-report/content.json",
+                "--out", t / "short.pptx", "--company", "그린텍")
+        if "PASS" not in r.stdout:
+            fails.append("짧은 등록 양식 이름 실패")
+    finally:
+        shutil.rmtree(Path.cwd() / "profiles/__qa_g", ignore_errors=True)
+    th = (t / "profiles/g/theme.yaml").read_text(encoding="utf-8")
+    if "8CC63F" not in th.upper():
+        fails.append("브랜드 강조색(원본 연두)이 유지되지 않음")
+
 print()
 if fails:
     print(f"실패 {len(fails)}건:", fails)
