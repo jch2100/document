@@ -42,6 +42,7 @@ DEFAULT_LEVEL = {
     "ending_style": "WARN", "item_long": "INFO", "gongmun": "INFO", "direct_symbol": "WARN",
     "direct_format": "WARN", "empty_paragraphs": "WARN", "heading_number_dup": "WARN",
     "table_no_style": "INFO", "compat_toc": "INFO", "topic_title": "WARN", "title_long": "WARN", "missing_source": "WARN",
+    "needs_confirm": "INFO", "company_placeholder": "WARN",
 }
 LABEL = {
     "off_template_shape": "양식 밖 텍스트", "off_template_object": "양식 밖 개체", "missing_korean_font": "한글 글꼴",
@@ -50,7 +51,7 @@ LABEL = {
     "ending_style": "개조식 종결", "item_long": "긴 항목", "gongmun": "표기", "direct_symbol": "기호 직접 입력",
     "direct_format": "직접 서식", "empty_paragraphs": "빈 줄 반복", "heading_number_dup": "번호 중복",
     "table_no_style": "표 스타일", "compat_toc": "호환성", "topic_title": "주제어 제목", "title_long": "긴 제목",
-    "missing_source": "출처 없음",
+    "missing_source": "출처 없음", "needs_confirm": "확인 필요 표시", "company_placeholder": "회사명 자리표시",
 }
 
 
@@ -105,8 +106,13 @@ class Checker:
             m = re.search(pat["re"], t)
             if m and not (pat.get("exclude_re") and re.search(pat["exclude_re"], t)):
                 self.add("gongmun", where, f'{pat["msg"]}: "{m.group(0)}"', pat.get("fix", ""), pat.get("level"))
-        if GUIDE.search(t):
-            self.add("guide_left", where, f'양식 안내문이 남아 있음: "{GUIDE.search(t).group(0)}"', "실제 내용으로 바꾸거나 삭제")
+        for m in GUIDE.finditer(t):
+            g = m.group(0)
+            if g.startswith("[확인 필요"):
+                self.add("needs_confirm", where, f"사람 확인 필요 표시: {g}", "원자료로 채우고 표시 삭제")
+            else:
+                self.add("guide_left", where, f'양식 안내문이 남아 있음: "{g}"', "실제 내용으로 바꾸거나 삭제")
+            break
         if bulletish and not allow_endings:
             if not any(p in t for p in self.gj.get("allow_phrases", [])):
                 for pat in self.gj["bad_endings"]:
@@ -281,6 +287,13 @@ def check_pptx(path, ck: Checker):
         if not (ck.is_korean_font(ea) or ck.is_korean_font(hang) or ck.is_korean_font(latin)):
             ck.add("missing_korean_font", f"테마 {kind}", f"테마 글꼴에 한글 글꼴이 지정되지 않음 (ea='{ea}', Hang='{hang}')",
                    "normalize.py --korean-font '맑은 고딕' 으로 테마의 동아시아 글꼴 지정")
+    for owner, label in [(master, "마스터")] + [(l, f"레이아웃 '{l.name}'") for l in prs.slide_layouts]:
+        if any(s.name == "회사명" and s.has_text_frame and s.text_frame.text.strip() == "회사명" for s in owner.shapes):
+            used = owner is master or any(sl.slide_layout == owner for sl in prs.slides)
+            if used:
+                ck.add("company_placeholder", label, "꼬리말·표지에 자리표시 글자 '회사명'이 그대로 나감",
+                       "fill.py --company \"실제 회사명\" (지우려면 --company \"\")")
+                break
     body = master._element.find(f"{P}txStyles/{P}bodyStyle/{A}lvl1pPr")
     if body is not None and body.get("latinLnBrk") != "0":
         ck.add("line_break", "마스터", "어절 단위 줄바꿈이 꺼져 있음 → 한글 단어가 중간에서 잘릴 수 있음",
@@ -299,6 +312,18 @@ def check_pptx(path, ck: Checker):
                        "예: '현황' → '이용률은 3년째 하락, 현장직 접속이 막혀 있음'")
             elif len(tt) > 55:
                 ck.add("title_long", f"슬라이드 {s_i} · 제목", f"제목 {len(tt)}자 — 2줄을 넘길 수 있음", "45자 안팎으로 줄이고 세부는 본문으로")
+        try:
+            import ys_pptx as _yp
+            req = _yp.REQUIRED.get(layout_name, [])
+        except Exception:
+            req = []
+        if req:
+            filled = {s.name for s in slide.placeholders if s.has_text_frame and s.text_frame.text.replace("\u200b", "").strip()}
+            filled |= {s.name for s in slide.shapes if getattr(s, "has_chart", False) or getattr(s, "has_table", False)}
+            missing = [n for n in req if n not in filled]
+            if missing:
+                ck.add("empty_slot", f"슬라이드 {s_i}", f"'{layout_name}' 레이아웃의 칸이 비어 균형이 깨짐: {', '.join(missing)}",
+                       "칸을 채우거나 더 맞는 레이아웃으로 (예: 카드 2개면 2단비교)")
         has_data = any((getattr(s, "has_chart", False) and s.has_chart) or (getattr(s, "has_table", False) and s.has_table
                        and re.search(r"\d", " ".join(c.text for r in s.table.rows for c in r.cells))) for s in slide.shapes)
         src = next((s for s in slide.placeholders if s.name == "출처"), None)
@@ -405,12 +430,11 @@ def _check_overflow(shape, prs, is_title, where, ck: Checker):
     if box_h <= 0:
         return
     ratio = total / box_h
+    if is_title:   # 제목 상자는 정확히 2줄 높이 → 2줄(=1.0배)은 정상, 3줄부터 문제
+        ratio = ratio / 1.2
     if ratio > ck.ty["overflow_fail"]:
-        if mode == "norm":
-            ck.add("overflow_maybe", where, f"글이 상자보다 약 {ratio:.1f}배 김 → 자동 맞춤으로 글자가 작게 줄어듦",
-                   "항목 줄이기 또는 장 나누기")
-        else:
-            ck.add("overflow_high", where, f"글이 상자보다 약 {ratio:.1f}배 김 (넘침 거의 확실)", "항목 줄이기 또는 장 나누기")
+        # PowerPoint는 파일을 열 때 '자동 맞춤'을 다시 계산하지 않는다 → 자동 맞춤이 있어도 넘쳐 보일 수 있음
+        ck.add("overflow_high", where, f"글이 상자보다 약 {ratio:.1f}배 김 (넘침 거의 확실)", "항목 줄이기 또는 장 나누기")
     elif ratio > ck.ty["overflow_warn"]:
         ck.add("overflow_maybe", where, f"상자를 꽉 채움 (추정 {ratio:.2f}배)", "한두 줄 줄이기 권장")
 
@@ -466,6 +490,10 @@ def check_docx(path, ck: Checker):
         ck.add("missing_korean_font", "스타일 기본값", "문서 기본 한글(동아시아) 글꼴이 지정되지 않음",
                "normalize.py --korean-font '맑은 고딕'")
 
+    for sec in doc.sections[:1]:
+        if "회사명" in " ".join(p.text for p in sec.header.paragraphs):
+            ck.add("company_placeholder", "머리말", "머리말에 자리표시 글자 '회사명'이 그대로 나감",
+                   "fill.py --company \"실제 회사명\"")
     bullet_styles = {"개조식 1", "개조식 2", "개조식 3", "List Bullet", "List Bullet 2", "List Bullet 3", "List Paragraph"}
     prof_styles = ck.profile.get("styles", {})
     bullet_styles |= {v for k, v in prof_styles.items() if k.startswith("bullet")}
@@ -568,7 +596,7 @@ def run(path, profile=None, out=None, quiet=False):
     verdict, n, rpt = write_report(path, ck, out)
     if not quiet:
         print(f"[검증] {Path(path).name}: {verdict}  (실패 {n['FAIL']} · 경고 {n['WARN']} · 참고 {n['INFO']})  → {rpt}")
-        for f in [f for f in ck.findings if f.level != "INFO"][:12]:
+        for f in [f for f in ck.findings if f.level != "INFO" or f.code == "needs_confirm"][:12]:
             print(f"  {f.level:4} {f.where}: {f.msg}")
         more = len([f for f in ck.findings if f.level != "INFO"]) - 12
         if more > 0:

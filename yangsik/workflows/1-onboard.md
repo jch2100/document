@@ -20,7 +20,9 @@ python SKILL_DIR/scripts/standardize.py <회사 pptx/docx 여러 개 가능> --n
 2. `brand.png`(색 견본)와 `pptx/*/preview.png` 를 보여 준다
 3. 틀리면 옵션으로 다시: `--primary 006140 --accent 6C9A2E --font "나눔고딕" --logo 로고.png`
    - 대표색은 흰 글자 대비 7:1 이상이 되도록 자동으로 어둡게 조정됨 (머리띠·표지에 흰 글자를 쓰기 때문) — 원래 색과 달라진 이유를 설명
-4. 이후 채우기는 `--template profiles/<회사>/pptx/01-exec-report/template.pptx`
+4. **원본과 달라지는 점을 먼저 알린다** (`brand.md` 의 '원본과 달라지는 점'): 구조·정렬·비율은 표준으로 바뀌고, 색·글꼴·로고·상단 띠·로고 위치는 원본을 따른다.
+5. 이후 채우기는 `--template profiles/<회사>/pptx/01-exec-report/template.pptx --company "<회사명>"`
+6. **반드시 `profiles/<회사>.zip` 을 사용자에게 전달**하고 말한다: "claude.ai는 대화가 끝나면 등록 결과가 사라집니다. 이 zip을 보관했다가 다음에 올려 주시거나, 전용 스킬로 만들어 두세요(workflows/7-export-skill.md)."
 
 ## B. 원본 그대로 등록 — 순서
 

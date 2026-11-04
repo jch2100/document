@@ -40,6 +40,20 @@ BULLET_SYMBOLS = ["□", "○", "-"]
 STRIP_RE = re.compile(r"^\s*(?:[□■○●◦\-–·•※▪▶]|\d{1,2}[.)]|[가나다라마바사아자차카타파하][.)]|\(\d+\)|\([가나다라마바사아자차카타파하]\)|[①-⑳]|[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+\.)\s+")
 
 
+def _tint(hexcolor, amount):
+    r, g, b = (int(hexcolor[i:i + 2], 16) for i in (0, 2, 4))
+    mix = lambda c: round(c + (255 - c) * amount)  # noqa: E731
+    return f"{mix(r):02X}{mix(g):02X}{mix(b):02X}"
+
+
+def _is_num(v):
+    try:
+        from ys_pptx import is_number_like
+    except Exception:
+        return False
+    return is_number_like(str(v))
+
+
 def _rgb(hexstr):
     return RGBColor.from_string(hexstr)
 
@@ -422,10 +436,23 @@ def add_table(doc, spec, theme, total_cm=None):
         trPr = t.rows[0]._tr.get_or_add_trPr()
         trPr.append(parse_xml(f'<w:tblHeader {nsdecls("w")}/>'))
     first_col_label = spec.get("label_col", False)
+    hl = spec.get("highlight_col", spec.get("강조열"))
+    accent = theme["colors"].get("accent", C["primary"])
+    if header and hl is not None and hl < ncol:
+        hc = t.rows[0].cells[hl]
+        _shade(hc, accent)
     for row in rows:
         cells = t.add_row().cells
         for i in range(ncol):
             _cell_text(cells[i], row[i] if i < len(row) else "")
+            if hl is not None and i == hl:
+                _shade(cells[i], _tint(accent, 0.87))
+                for p in cells[i].paragraphs:
+                    for r in p.runs:
+                        r.bold = True
+            elif i > 0 and _is_num(row[i] if i < len(row) else ""):
+                for p in cells[i].paragraphs:
+                    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
             if first_col_label and i == 0:
                 _shade(cells[i], C["light"])
                 for p in cells[i].paragraphs:
@@ -455,9 +482,16 @@ def add_kv_table(doc, pairs, theme, cols=2):
             _cell_text(cells[j * 2], k, header=True, align=WD_ALIGN_PARAGRAPH.CENTER)
             _shade(cells[j * 2], C["light"])
             _cell_text(cells[j * 2 + 1], v)
-    # 한 쌍이 한 행을 다 쓰는 경우(값이 김) 병합
     widths = [2.2, 6.3] * per_row
     _col_widths(t, widths, 17.0)
+    # 쌍이 홀수면 마지막 값을 남은 칸까지 병합 (빈 라벨 칸 없애기)
+    rem = len(pairs) % per_row
+    if rem:
+        last = t.rows[-1].cells
+        merged = last[rem * 2 - 1].merge(last[-1])
+        txt = pairs[-1][1]
+        merged.text = ""
+        _cell_text(merged, txt)
     # 첫 행 스타일 조건(머리글색) 끄기
     tblPr = t._tbl.tblPr
     look = tblPr.find(qn("w:tblLook"))
@@ -562,7 +596,11 @@ def add_block(doc, block, theme, base_dir=None, warn=print):
             add_par(doc, text, S_B[min(level, 2)])
     elif kind == "note":
         for line in ([val] if isinstance(val, str) else val):
-            add_par(doc, line, S_NOTE)
+            if re.match(r"^\s*(붙임|끝\.?\s*$)", str(line)):   # 공문 관례: 붙임·끝은 ※ 없이
+                p = add_par(doc, line, "Normal", strip=False)
+                p.paragraph_format.space_before = Pt(8)
+            else:
+                add_par(doc, line, S_NOTE)
     elif kind == "summary":
         items = [val] if isinstance(val, str) else val
         for level, text in flatten_items(items):
@@ -620,8 +658,15 @@ def theme_from_doc(doc):
             light = shd.get(qn("w:fill"))
     except KeyError:
         pass
+    accent = primary
+    try:
+        bd = doc.styles[S_SUMMARY].element.find(".//" + qn("w:left"))
+        if bd is not None and bd.get(qn("w:color")):
+            accent = bd.get(qn("w:color"))
+    except KeyError:
+        pass
     return {"colors": {"primary": primary, "light": light, "muted": color_of(S_CAPTION, "6B7280"),
-                       "accent": primary, "text": color_of("Normal", "222222")},
+                       "accent": accent, "text": color_of("Normal", "222222")},
             "fonts": {}, "company": ""}
 
 
@@ -639,9 +684,25 @@ def apply_style_map(styles):
             S_B[int(k[-1]) - 1] = v
 
 
-def fill(template_path, content, out_path, base_dir=None, warn=print, styles=None):
+def set_company(doc, company):
+    n = 0
+    for sec in doc.sections:
+        for p in sec.header.paragraphs:
+            for r in p.runs:
+                if "회사명" in r.text:
+                    r.text = r.text.replace("회사명", company)
+                    if not company:
+                        r.text = r.text.replace("  |  ", "", 1).lstrip()
+                    n += 1
+    return n
+
+
+def fill(template_path, content, out_path, base_dir=None, warn=print, styles=None, company=None):
     apply_style_map(styles)
     doc = Document(str(template_path))
+    company = company if company is not None else content.get("meta", {}).get("company")
+    if company is not None:
+        set_company(doc, company)
     theme = theme_from_doc(doc)
     clear_body(doc)
     header_label = content.get("meta", {}).get("header")

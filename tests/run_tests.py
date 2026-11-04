@@ -44,7 +44,7 @@ with tempfile.TemporaryDirectory() as t:
     print("3) 예시 내용 → PASS")
     for ex, tpl, ext in (("01-exec-report", "pptx/01", "pptx"), ("01-1page-report", "docx/01", "docx")):
         out = t / f"ex.{ext}"
-        r = run(SK / "scripts/fill.py", "--template", tpl, "--content", ROOT / "examples" / ex / "content.json", "--out", out)
+        r = run(SK / "scripts/fill.py", "--template", tpl, "--content", ROOT / "examples" / ex / "content.json", "--out", out, "--company", "테스트상사")
         if "PASS" not in r.stdout:
             fails.append(f"{ex} not PASS")
         run(SK / "scripts/revise.py", out, "--ops", ROOT / "examples" / ex / "revise-ops.json", "--out", t / f"ex_v2.{ext}")
@@ -95,6 +95,36 @@ with tempfile.TemporaryDirectory() as t:
     r = run(SK / "scripts/fill.py", "--template", "pptx/01", "--content", c2, "--out", t / "c2.pptx")
     if "주제어" not in r.stdout or "출처" not in r.stdout:
         fails.append("topic_title / missing_source 미검출")
+
+    print("8) QA 회귀: 표 교체 수정 · 회사명 · 2줄 제목 · DOCX 강조/정보표")
+    ops = t / "ops.json"
+    ops.write_text(json.dumps({"ops": [
+        {"slide": 6, "slot": "표", "value": {"header": ["구분", "A", "B"], "rows": [["비용", "1억 원", "2억 원"]], "highlight_col": 2}},
+        {"slide": 2, "slot": "없는칸", "value": "x"}]}, ensure_ascii=False), encoding="utf-8")
+    base = t / "ex.pptx"
+    run(SK / "scripts/fill.py", "--template", "pptx/01", "--content", ROOT / "examples/01-exec-report/content.json", "--out", base)
+    r = run(SK / "scripts/revise.py", base, "--ops", ops, "--out", t / "rv.pptx", expect=2)
+    if "새 내용으로 교체" not in r.stdout or "✗" not in r.stdout:
+        fails.append("revise: 표 교체 또는 실패 보고 안 됨")
+    from pptx import Presentation as _P
+    tb = next(s_ for s_ in _P(str(t / "rv.pptx")).slides[5].shapes if s_.has_table)
+    if tb.table.cell(1, 2).text != "2억 원":
+        fails.append("revise: 표 내용이 바뀌지 않음")
+    r = run(SK / "scripts/check.py", base)
+    if "회사명" not in r.stdout:
+        fails.append("company_placeholder 미검출")
+    r = run(SK / "scripts/fill.py", "--template", "pptx/01", "--content", ROOT / "examples/01-exec-report/content.json", "--out", t / "co.pptx", "--company", "테스트상사")
+    if "회사명" in r.stdout or "상자를 꽉 채움" in r.stdout:
+        fails.append("--company 미적용 또는 2줄 제목 오탐")
+    dj = t / "d.json"
+    dj.write_text(json.dumps({"blocks": [{"meta": [["a", "1"], ["b", "2"], ["c", "3"]]}, {"table": {"header": ["x", "y"], "rows": [["1", "2억 원"]], "highlight_col": 1}}, {"note": "끝."}]}, ensure_ascii=False), encoding="utf-8")
+    r = run(SK / "scripts/fill.py", "--template", "docx/01", "--content", dj, "--out", t / "d.docx", "--company", "테스트상사")
+    from docx import Document as _D
+    dd = _D(str(t / "d.docx"))
+    if any("※" in p_.text for p_ in dd.paragraphs if "끝" in p_.text):
+        pass
+    if "회사명" in dd.sections[0].header.paragraphs[0].text:
+        fails.append("docx --company 미적용")
 
 print()
 if fails:

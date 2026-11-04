@@ -22,6 +22,10 @@ python SKILL_DIR/scripts/check.py 파일 [--profile profile.yaml]
 | line_break | 어절 단위 줄바꿈 꺼짐 | WARN |
 | empty_slot | 빈 슬롯 | WARN |
 | guide_left | `[안내문]` 이 남음 | WARN |
+| needs_confirm | `[확인 필요: …]` 표시 (사람이 채울 숫자) | INFO — 보고 때 목록으로 |
+| company_placeholder | 꼬리말·머리말에 '회사명' 글자가 남음 | WARN |
+| topic_title / title_long | 제목이 주제어 / 3줄 이상 | WARN |
+| missing_source | 숫자 있는 표·차트에 출처 없음 | WARN |
 | ai_tone | AI 티 나는 표현 (rules/ai-tone.yaml) | WARN |
 | ending_style | 개조식인데 '~습니다' | WARN |
 | direct_symbol | Word에서 기호·번호를 손으로 입력 | WARN |

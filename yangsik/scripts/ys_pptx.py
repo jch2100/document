@@ -61,9 +61,9 @@ def col(start, span):
 
 # 세로 리듬 (인치)
 Y_TRACKER, H_TRACKER = 0.36, 0.26
-Y_TITLE, H_TITLE = 0.64, 0.86            # 24pt 2줄까지
-Y_RULE = 1.58                            # 제목 아래 구분선
-Z_TOP, Z_BOT = 1.88, 6.45                # 내용 영역
+Y_TITLE, H_TITLE = 0.62, 0.92            # 24pt 2줄까지 (구분선까지 여유 0.1in)
+Y_RULE = 1.64                            # 제목 아래 구분선
+Z_TOP, Z_BOT = 1.92, 6.45                # 내용 영역
 Y_SOURCE, H_SOURCE = 6.58, 0.3
 Y_FOOTER = 7.02
 
@@ -260,14 +260,14 @@ def layout_defs(theme):
     for i in range(3):
         x, w = col(1 + i * 4, 4)
         shapes.append(ph(4 + i * 2, f"카드{i+1}제목", "body", 20 + i * 2, x, Z_TOP, w, 0.95,
-                         PLAIN(22, "accent2" if i == 0 else "tx2", b=True, line=100), f"카드 {i+1} 제목 또는 숫자",
+                         PLAIN(22, "tx2", b=True, line=100), f"카드 {i+1} 제목 또는 숫자",
                          anchor="b", ins=(0.22, 0.2, 0.2, 0.1), fill=C["light"]))
         shapes.append(ph(5 + i * 2, f"카드{i+1}본문", "body", 21 + i * 2, x, Z_TOP + 0.95, w, zh - 0.95,
                          BODY_LEVELS(TYPE["sub"] + 1), f"카드 {i+1} 설명", ins=(0.22, 0.1, 0.2, 0.28), fill=C["light"]))
     defs.append(content("3단카드", shapes))
     # 7 프로세스 — 4단계 화살표 + 설명 (3+3+3+3단). 머리 화살표는 고정 위치(움직이지 않음)
     shapes = []
-    P_TOP = Z_TOP + 0.55
+    P_TOP = Z_TOP + 0.9
     for i in range(4):
         x, w = col(1 + i * 3, 3)
         geom = "homePlate" if i == 0 else "chevron"
@@ -316,7 +316,7 @@ def layout_defs(theme):
     defs.append(content("빅넘버", [
         ph(4, "숫자", "body", 50, lx, Z_TOP, lw, 1.4, PLAIN(TYPE["number"], "accent2", b=True, line=100), "42%", anchor="b"),
         ph(5, "설명", "body", 51, lx, Z_TOP + 1.5, lw, 1.2, PLAIN(TYPE["lead"], "tx2", b=True, line=120), "숫자의 의미 한 줄"),
-        rect(30, "구분선", rx - GUTTER / 2 - 0.01, Z_TOP, 0.02, zh, RULE_GRAY),
+        rect(30, "구분선", rx - GUTTER / 2 - 0.01, Z_TOP + 0.6, 0.02, zh - 1.2, RULE_GRAY),
         ph(6, "본문", "body", 1, rx + 0.2, Z_TOP, rw - 0.2, zh, BODY_LEVELS(TYPE["body"]), "근거 2~4개", anchor="t"),
     ]))
     # 12 핵심메시지 — 한 문장 결론 (요약·전환)
@@ -357,7 +357,7 @@ BALANCE = {
     "목차": [_S((Z_TOP, Z_BOT), [(["본문"], None, 0.8)])],
     "2단비교": [_S((Z_TOP, Z_BOT), [(["좌측제목", "우측제목"], 0.52, 0), (["좌측본문", "우측본문"], None, 1.0)], [0.2])],
     "3단카드": [_S((Z_TOP, Z_BOT), [(["카드1제목", "카드2제목", "카드3제목"], 0.95, 0), (["카드1본문", "카드2본문", "카드3본문"], None, 1.4)], [0])],
-    "프로세스": [_S((Z_TOP + 0.55, Z_BOT), [(["단계1제목", "단계2제목", "단계3제목", "단계4제목"], 0.72, 0),
+    "프로세스": [_S((Z_TOP + 0.9, Z_BOT), [(["단계1제목", "단계2제목", "단계3제목", "단계4제목"], 0.72, 0),
                                    (["단계1본문", "단계2본문", "단계3본문", "단계4본문"], None, 1.0)], [0.25], bias=0)],
     "빅넘버": [_S((Z_TOP, Z_BOT), [(["숫자"], 1.3, 0), (["설명"], None, 0.5)], [0.15]),
               _S((Z_TOP, Z_BOT), [(["본문"], None, 0.8)])],
@@ -365,6 +365,21 @@ BALANCE = {
     "표지": [_S((1.2, 5.9), [(["제목"], None, 0.7), (["부제"], None, 0.4)], [0.35])],
     "섹션": [_S((1.2, 6.3), [(["번호"], 1.0, 0), (["제목"], None, 0.6), (["설명"], None, 0.4)], [0.1, 0.25], bias=0.45)],
     "마무리": [_S((1.4, 6.6), [(["제목"], None, 0.6), (["본문"], None, 0.4)], [0.3])],
+}
+
+
+SIBLINGS = {
+    "3단카드": [["카드1제목", "카드2제목", "카드3제목", "카드1본문", "카드2본문", "카드3본문"]],
+    "프로세스": [["단계1본문", "단계2본문", "단계3본문", "단계4본문"]],
+    "2단비교": [["좌측본문", "우측본문"]],
+}
+# 비면 화면 균형이 깨지는 칸 (check.py 가 경고)
+REQUIRED = {
+    "3단카드": ["카드1제목", "카드2제목", "카드3제목", "카드1본문", "카드2본문", "카드3본문"],
+    "프로세스": ["단계1제목", "단계2제목", "단계3제목", "단계4제목", "단계1본문", "단계2본문", "단계3본문", "단계4본문"],
+    "2단비교": ["좌측제목", "우측제목", "좌측본문", "우측본문"],
+    "매트릭스": ["좌상", "우상", "좌하", "우하"],
+    "차트": ["해설"], "빅넘버": ["숫자", "본문"], "이미지": ["캡션"],
 }
 
 
@@ -535,12 +550,20 @@ def build_base(theme) -> bytes:
     for i, d in enumerate(defs[len(layouts):], len(layouts) + 1):
         _add_layout_part(prs, _layout_xml(d), i)
     logo = theme.get("logo")
+    m = prs.slide_masters[0]
+    mtree = m._element.find(".//p:cSld/p:spTree", NS)
+    if theme.get("top_band"):      # 원본 양식의 상단 색띠를 살림
+        mtree.append(parse_xml(f'<p:wrap {NSDECL}>{rect(15, "상단띠", 0, 0, SLIDE_W, 0.14, SCH("tx2"))}</p:wrap>')[0])
     if logo and Path(logo).exists():
-        m = prs.slide_masters[0]
-        _add_logo(m.part, m._element.find(".//p:cSld/p:spTree", NS), logo, M, Y_FOOTER - 0.02, 0.26, 2.0)
+        if theme.get("logo_position") == "top-right":
+            _add_logo(m.part, mtree, logo, SLIDE_W - M, 0.26, 0.34, 2.2, right=True)
+            mtree.append(parse_xml(f'<p:wrap {NSDECL}>{textbox(16, "회사명", M, Y_FOOTER, 6, 0.26, theme["company"], TYPE["footer"], theme["colors"]["muted"], b=True)}</p:wrap>')[0])
+        else:
+            _add_logo(m.part, mtree, logo, M, Y_FOOTER - 0.02, 0.26, 2.0)
         for l in prs.slide_layouts:
-            if l.name in ("표지", "마무리"):
-                _add_logo(l.part, l._element.find(".//p:cSld/p:spTree", NS), logo, M, 0.6, 0.5, 2.6)
+            if l.part._element.cSld.get("name") in ("표지", "마무리"):
+                # l._element 는 교체 전 요소를 캐시하고 있을 수 있어 part 의 현재 요소를 쓴다
+                _add_logo(l.part, l.part._element.find(".//p:cSld/p:spTree", NS), logo, M, 0.6, 0.5, 2.6)
     core = prs.core_properties
     core.title, core.author, core.language = "양식대로 표준 양식", theme["company"], "ko-KR"
     core.keywords = "yangsik"
@@ -589,7 +612,27 @@ def set_text(shape, value):
         txBody.add_p()
 
 
-NUM_RE = re.compile(r"^[\s+\-−–]*[\d.,]+\s*(?:%|%p|원|만 ?원|억 ?원|억|만|명|건|개|배|x|×|주|일|개월|년|시간)?\s*$")
+_NUM_TOKEN = re.compile(r"^[약~±+\-−–(]?[\d.,]*\d[\d.,]*(?:%p|%|배|x|×)?[가-힣]{0,2}\)?$")
+_UNIT_WORD = {"원", "만", "억", "조", "명", "건", "개", "배", "주", "일", "년", "개월", "시간", "분", "달러", "감소", "증가",
+              "예상", "이상", "이하", "내외", "수준", "p", "%p", "-", "→", "~"}
+
+
+def is_number_like(v):
+    """'1억 2,960만 원' '-2억 원' '2%p 감소 예상' '+20%' → True / '초기 8억 + 연 1.5억 원' → False"""
+    toks = str(v).replace("\n", " ").split()
+    if not toks or not any(ch.isdigit() for ch in v):
+        return False
+    return all(_NUM_TOKEN.match(t) or t in _UNIT_WORD for t in toks)
+
+
+NUM_RE = re.compile(r"^$")  # 하위 호환 (사용 안 함)
+
+
+def _tint(hexcolor, amount):
+    """흰색과 섞기: amount=0.88 → 88% 흰색"""
+    r, g, b = (int(hexcolor[i:i + 2], 16) for i in (0, 2, 4))
+    mix = lambda c: round(c + (255 - c) * amount)  # noqa: E731
+    return f"{mix(r):02X}{mix(g):02X}{mix(b):02X}"
 
 
 def _cell_border(cell, side, w, color):
@@ -638,7 +681,7 @@ def fill_table(ph_shape, spec, prs=None, yangsik=True):
     numeric_col = []
     for c in range(n_cols):
         vals = [str(r[c]).strip() for r in rows if c < len(r) and str(r[c]).strip() not in ("", "-")]
-        numeric_col.append(bool(vals) and sum(bool(NUM_RE.match(v)) for v in vals) >= max(1, len(vals) * 0.6))
+        numeric_col.append(bool(vals) and sum(is_number_like(v) for v in vals) >= max(1, len(vals) * 0.6))
     widths = spec.get("col_widths") or spec.get("열너비")
     total = gf.width
     if widths:
@@ -656,7 +699,9 @@ def fill_table(ph_shape, spec, prs=None, yangsik=True):
             tblPr.set(k, "0")
     C_TX2 = _scheme_rgb(prs, "dk2") if prs else "1F3A5F"
     C_ACC = _scheme_rgb(prs, "accent2") if prs else "2E75B6"
-    C_LIGHT = _scheme_rgb(prs, "lt2") if prs else "F2F4F7"
+    C_HL = _tint(C_ACC, 0.87)          # 강조 열 배경: 강조색 13% (흰 배경과 확실히 구분)
+    n_body = len(rows)
+    fsz = 14 if (n_body <= 5 and n_cols <= 4) else (13 if n_body <= 8 else TYPE["table"])
     for r_i, row in enumerate(all_rows):
         is_head = bool(header) and r_i == 0
         for c_i in range(n_cols):
@@ -668,22 +713,25 @@ def fill_table(ph_shape, spec, prs=None, yangsik=True):
                     p = cell.text_frame.add_paragraph()
                 _set_runs(p, line)
             cell.vertical_anchor = MSO_ANCHOR.MIDDLE if not is_head else MSO_ANCHOR.BOTTOM
-            cell.margin_left = inch(0.08 if c_i else 0.02)
+            cell.margin_left = inch(0.12 if (hl is not None and c_i == hl) else (0.08 if c_i else 0.02))
             cell.margin_right = inch(0.08)
             cell.margin_top = cell.margin_bottom = inch(0.04)
             for p in cell.text_frame.paragraphs:
                 p.alignment = PP_ALIGN.RIGHT if numeric_col[c_i] else PP_ALIGN.LEFT
                 for r in p.runs:
-                    r.font.size = Pt(TYPE["table"])
+                    r.font.size = Pt(fsz)
                     if is_head or (c_i == 0 and spec.get("label_col", True)):
                         r.font.bold = True
                     if yangsik:
                         r.font.color.rgb = RGBColor.from_string(C_TX2 if is_head else "222222")
                         if hl is not None and c_i == hl:
-                            r.font.color.rgb = RGBColor.from_string(C_ACC if is_head else C_TX2)
+                            r.font.color.rgb = RGBColor.from_string("FFFFFF" if is_head else C_TX2)
                             r.font.bold = True
             if yangsik:
-                _cell_fill(cell, C_LIGHT if (hl is not None and c_i == hl) else None)
+                if hl is not None and c_i == hl:
+                    _cell_fill(cell, C_ACC if is_head else C_HL)   # 머리글 강조색 + 흰 글자, 열은 연한 강조색
+                else:
+                    _cell_fill(cell, None)
                 for side in ("left", "right", "top"):
                     _cell_border(cell, side, 0, None)
                 last = r_i == len(all_rows) - 1
@@ -874,8 +922,19 @@ def add_slide(prs, spec, base_dir=None, warn=print):
                 used.discard(idx)
         else:
             set_text(shp, value)
+    # 묶음 칸(카드·단계·2단)은 형제 칸이 하나라도 채워졌으면 빈 칸도 남겨서 높이·폭을 맞춘다
+    keep = set()
+    for group in SIBLINGS.get(layout.name, []):
+        if any(slots.get(n, (None,))[0] in used for n in group):
+            keep |= {slots[n][0] for n in group if n in slots}
     for idx, shp in by_idx.items():
-        if idx not in used and shp.has_text_frame and not shp.text_frame.text.strip():
+        if idx in used or not shp.has_text_frame or shp.text_frame.text.strip():
+            continue
+        if idx in keep:
+            set_text(shp, "\u200b")      # 보이지 않는 글자: 칸(배경)은 유지, 편집 화면 안내문은 숨김
+            for p in shp.text_frame.paragraphs:
+                p._p.get_or_add_pPr().insert(0, parse_xml(f'<a:buNone {NSDECL}/>'))
+        else:
             shp._element.getparent().remove(shp._element)
     _add_slide_number(slide, layout)
     if yangsik:
@@ -886,8 +945,26 @@ def add_slide(prs, spec, base_dir=None, warn=print):
     return slide
 
 
-def fill(template_path, content, out_path, base_dir=None, warn=print):
+def set_company(prs, company):
+    """마스터·레이아웃의 '회사명' 글상자를 실제 회사명으로 (빈 문자열이면 지움)."""
+    n = 0
+    for owner in [prs.slide_masters[0]] + list(prs.slide_layouts):
+        for shp in owner.shapes:
+            if shp.name == "회사명" and shp.has_text_frame:
+                runs = [r for p in shp.text_frame.paragraphs for r in p.runs]
+                if runs:
+                    runs[0].text = company
+                    for r in runs[1:]:
+                        r.text = ""
+                    n += 1
+    return n
+
+
+def fill(template_path, content, out_path, base_dir=None, warn=print, company=None):
     prs = Presentation(str(template_path))
+    company = company if company is not None else content.get("meta", {}).get("company")
+    if company is not None:
+        set_company(prs, company)
     delete_all_slides(prs)
     for i, spec in enumerate(content.get("slides", []), 1):
         try:

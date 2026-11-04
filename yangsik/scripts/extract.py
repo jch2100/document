@@ -48,15 +48,25 @@ def extract_pptx(path):
             if "SLIDE_NUMBER" in t or "FOOTER" in t or "DATE" in t:
                 continue
             if getattr(shp, "has_table", False) and shp.has_table:
-                rows = [[c.text for c in r.cells] for r in shp.table.rows]
-                spec[shp.name] = {"header": rows[0], "rows": rows[1:]} if rows else {}
+                tbl = shp.table
+                rows = [[c.text for c in r.cells] for r in tbl.rows]
+                t = {"header": rows[0], "rows": rows[1:]} if rows else {}
+                tot = sum(cl.width for cl in tbl.columns) or 1
+                t["col_widths"] = [round(cl.width / tot * 10, 1) for cl in tbl.columns]
+                # 강조 열: 본문 행 셀이 모두 채우기 색을 가진 열
+                for ci in range(len(tbl.columns)):
+                    cells = [tbl.cell(ri, ci) for ri in range(1, len(tbl.rows))]
+                    if cells and all(c._tc.tcPr is not None and c._tc.tcPr.find("{http://schemas.openxmlformats.org/drawingml/2006/main}solidFill") is not None for c in cells):
+                        t["highlight_col"] = ci
+                        break
+                spec[shp.name] = t
             elif getattr(shp, "has_chart", False) and shp.has_chart:
                 ch = shp.chart
                 plot = ch.plots[0]
                 spec[shp.name] = {"type": "bar", "categories": [str(c) for c in plot.categories],
                                   "series": {se.name: list(se.values) for se in plot.series}}
             elif shp.has_text_frame:
-                paras = [(p.level, "".join(r.text for r in p.runs)) for p in shp.text_frame.paragraphs]
+                paras = [(p.level, "".join(r.text for r in p.runs).replace("\u200b", "")) for p in shp.text_frame.paragraphs]
                 paras = [x for x in paras if x[1].strip()]
                 if not paras:
                     continue

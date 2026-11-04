@@ -48,6 +48,7 @@ def main():
     ap.add_argument("--content", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--profile", help="검증 기준 profile.yaml (기본: 양식 옆 profile.yaml)")
+    ap.add_argument("--company", help="꼬리말·머리말의 '회사명' 자리에 넣을 이름 (빈 문자열이면 지움). 내용 JSON meta.company 도 가능")
     ap.add_argument("--no-check", action="store_true")
     ap.add_argument("--preview", action="store_true", help="LibreOffice로 썸네일 시트 생성")
     a = ap.parse_args()
@@ -69,13 +70,13 @@ def main():
         import ys_pptx
         if "slides" not in content:
             sys.exit("PPTX 내용 JSON에는 'slides' 목록이 필요합니다")
-        ys_pptx.fill(tpl, content, out, base_dir)
+        ys_pptx.fill(tpl, content, out, base_dir, company=a.company)
         print(f"  슬라이드 {len(content['slides'])}장 → {out}")
     elif kind == ".docx":
         import ys_docx
         if "blocks" not in content:
             sys.exit("DOCX 내용 JSON에는 'blocks' 목록이 필요합니다")
-        ys_docx.fill(tpl, content, out, base_dir, styles=profile.get("styles"))
+        ys_docx.fill(tpl, content, out, base_dir, styles=profile.get("styles"), company=a.company)
         print(f"  블록 {len(content['blocks'])}개 → {out}")
     else:
         sys.exit("pptx/docx 양식만 지원합니다")
@@ -86,9 +87,10 @@ def main():
         verdict, _ = check.run(out, profile_path if profile_path.exists() else None)
     if a.preview:
         import render
-        r = render.render(out, sheet=True, keep_pages=False)
+        r = render.render(out, sheet=True, keep_pages=True)
         if r and r.get("sheet"):
-            print(f"[미리보기] {r['sheet']}")
+            print(f"[미리보기] {r['sheet']}  (장별 이미지: {r['sheet'].parent}/)")
+            print("  ※ 미리보기는 대체 글꼴이라 숫자·괄호 주변 간격이 벌어져 보일 수 있음 (실제 파일은 정상)")
     sys.exit(1 if verdict == "FAIL" else 0)
 
 

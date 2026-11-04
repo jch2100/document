@@ -16,7 +16,8 @@
 결과: profiles/<이름>/
   theme.yaml          추출한 브랜드 (사람이 고쳐서 다시 돌릴 수 있음)
   brand.md            무엇을 어디서 뽑았는지 + 판단 근거
-  brand.png           색 견본 + 표지 미리보기 (LibreOffice 있을 때)
+  brand.png           색 견본
+  <이름>.zip           위 폴더 전체 (사용자에게 전달용)
   logo.png            추출한 로고 (있을 때)
   pptx/01-…/ docx/01-…/  브랜드 적용 표준 양식 10종 (template + profile.yaml)
 """
@@ -132,6 +133,7 @@ def extract_pptx(path, out_dir):
     # 로고: 마스터·레이아웃·앞 슬라이드의 그림 중 '여러 번 나오거나 모서리에 작게 있는 것'
     pics = Counter()
     blobs = {}
+    pic_pos = {}
     sw, sh = prs.slide_width, prs.slide_height
 
     def scan(shapes, weight):
@@ -147,15 +149,31 @@ def extract_pptx(path, out_dir):
                     key = hash(blob)
                     pics[key] += weight
                     blobs[key] = (blob, s.image.ext)
+                    if s.left > sw * 0.55 and s.top < sh * 0.2:
+                        pic_pos[key] = "top-right"
     scan(master.shapes, 5)
     for l in prs.slide_layouts:
         scan(l.shapes, 2)
     for s in list(prs.slides)[:10]:
         scan(s.shapes, 1)
+    # 상단 색띠: 화면 폭 90% 이상, 위쪽 25% 안, 무채색이 아닌 채우기
+    band = False
+    for owner in [master] + list(prs.slide_layouts) + list(prs.slides)[:5]:
+        for s in owner.shapes:
+            try:
+                if s.width and s.width > sw * 0.9 and s.top is not None and s.top < sh * 0.25 and s.height < sh * 0.2:
+                    if s.fill.type is not None and str(s.fill.fore_color.rgb) and not is_neutral(str(s.fill.fore_color.rgb)):
+                        band = True
+            except Exception:
+                pass
+    if band:
+        notes.append("원본에 상단 색띠가 있음 → 표준 양식 맨 위에 대표색 띠를 넣음")
+    logo_pos = None
     logo = None
     if pics:
         key, _n = pics.most_common(1)[0]
         blob, ext = blobs[key]
+        logo_pos = pic_pos.get(key)
         logo = out_dir / f"logo.{ext}"
         logo.write_bytes(blob)
         notes.append(f"PPTX 로고: 마스터/레이아웃/슬라이드 모서리의 작은 그림 중 가장 자주 나온 것 ({ext})")
@@ -163,7 +181,10 @@ def extract_pptx(path, out_dir):
     if abs(sw / sh - 16 / 9) > 0.05:
         notes.append(f"원본 슬라이드 크기 {size} (16:9 아님) → 표준 양식은 16:9 로 만듦")
     company = prs.core_properties.author or ""
-    return dict(colors=colors, fonts=fonts, used=used, logo=logo, company=company, source=Path(path).name)
+    if logo_pos:
+        notes.append("원본 로고가 오른쪽 위 → 표준 양식도 내용 장 오른쪽 위에 로고")
+    return dict(colors=colors, fonts=fonts, used=used, logo=logo, company=company, source=Path(path).name,
+                band=band, logo_pos=logo_pos, aspect=f"{sw/914400:.2f}x{sh/914400:.2f}")
 
 
 def extract_docx(path, out_dir):
@@ -215,7 +236,8 @@ def extract_docx(path, out_dir):
         if logo:
             break
     company = doc.core_properties.author or ""
-    return dict(colors=colors, fonts=fonts, used=used, logo=logo, company=company, source=Path(path).name)
+    return dict(colors=colors, fonts=fonts, used=used, logo=logo, company=company, source=Path(path).name,
+                band=False, logo_pos=None, aspect=None)
 
 
 OFFICE_DEFAULTS = {"44546A", "4472C4", "ED7D31", "A5A5A5", "FFC000", "5B9BD5", "70AD47", "1F497D", "4F81BD", "C0504D",
@@ -258,8 +280,13 @@ def decide(found, overrides):
         cands = [c for c in ranked if c != primary and 0.25 <= hls(c)[1] <= 0.65 and sat(c) > 0.35]
         # 대표색과 색상이 비슷하면 '같은 계열의 밝은 색', 다르면 그 색
         accent = cands[0] if cands else with_light(primary, 0.48)
-        if contrast(accent, "FFFFFF") < 3.0:
-            accent = with_light(accent, max(hls(accent)[1] - 0.12, 0.3))
+    if contrast(accent, "FFFFFF") < 4.5:   # 트래커·숫자 등 작은 글씨에도 쓰므로 흰 배경 대비 4.5:1 이상
+        before = accent
+        _h, l, _s = hls(accent)
+        while contrast(accent, "FFFFFF") < 4.5 and l > 0.1:
+            l -= 0.03
+            accent = with_light(accent, l)
+        notes.append(f"강조색 {before} → {accent}: 작은 글씨 가독성 기준(흰 배경 대비 4.5:1)을 맞추려고 어둡게")
         notes.append(f"강조색 {accent}: " + ("두 번째로 많이 쓴 선명한 색" if cands else "대표색을 밝게 한 같은 계열"))
     light = with_light(primary, 0.965)
     hh, _l, s = hls(light)
@@ -284,11 +311,14 @@ def decide(found, overrides):
         notes.append(f"'{font}'는 한글 글꼴 목록에 없음 → 맑은 고딕으로 대체 (rules/typography.yaml 에 추가하면 그대로 씀)")
         font = "맑은 고딕"
     logo = overrides.get("logo") or next((f["logo"] for f in found if f["logo"]), None)
+    logo = str(Path(logo).resolve()) if logo else None
     company = overrides.get("company") or next((f["company"] for f in found if f["company"]), "") or "회사명"
     return {"company": company, "fonts": {"korean": font, "latin": font},
             "colors": {"primary": primary, "accent": accent, "highlight": "E07A1F", "text": "1F2937",
                        "muted": "6B7280", "light": light},
-            "logo": str(logo) if logo else None}
+            "logo": logo,
+            "top_band": any(f.get("band") for f in found),
+            "logo_position": next((f["logo_pos"] for f in found if f.get("logo_pos")), "footer")}
 
 
 def swatch(theme, out):
@@ -351,17 +381,30 @@ def main():
          "![색 견본](brand.png)", "", "| 항목 | 값 |", "|---|---|",
          f"| 회사명 | {theme['company']} |", f"| 한글 글꼴 | {theme['fonts']['korean']} |"]
     L += [f"| {k} | `#{v}` |" for k, v in theme["colors"].items()]
-    L += [f"| 로고 | {Path(theme['logo']).name if theme['logo'] else '없음 (회사명 글자로 대체)'} |", "", "## 판단 근거", ""]
+    L += [f"| 로고 | {Path(theme['logo']).name if theme['logo'] else '없음 (회사명 글자로 대체)'} ({theme['logo_position']}) |",
+          f"| 상단 색띠 | {'있음' if theme['top_band'] else '없음'} |", "", "## 판단 근거", ""]
     L += [f"- {n}" for n in notes]
+    L += ["- highlight(주황)는 원본 색이 아니라 경고·예외 표시용 기본값 — 거의 쓰지 않음", "",
+          "## 원본과 달라지는 점 (사용자에게 미리 알릴 것)", "",
+          "- 구조: 손으로 그린 상자 → 표준 레이아웃 14종의 '칸' (AI가 채우고 고칠 수 있게)",
+          "- 제목: 가운데 정렬이었다면 왼쪽 정렬로 (컨설팅 관례, 줄바꿈 안정)",
+          "- 글자 크기·위치: 표준 타입 스케일·12단 그리드로 통일 (references/design-system.md)",
+          f"- 화면 비율: {next((f['aspect'] for f in found if f.get('aspect')), '-')} → 16:9" if any(f.get("aspect") and f["aspect"] != "13.33x7.50" for f in found) else "- 화면 비율: 16:9 유지",
+          "- 원본 모양을 한 픽셀도 바꾸면 안 되면 → workflows/1-onboard.md 의 'B. 원본 그대로 등록'"]
     L += ["", "## 다음 단계", "",
           "1. `pptx/*/preview.png`, `docx/*/preview.png` 로 결과 확인",
-          "2. 색·글꼴이 틀리면 `theme.yaml` 을 고치고: `python scripts/build_templates.py --theme profiles/<이름>/theme.yaml --out profiles/<이름>`",
-          "3. 채우기: `python scripts/fill.py --template profiles/<이름>/pptx/01-exec-report/template.pptx --content 내용.json --out 결과.pptx`"]
+          f"2. 색·글꼴이 틀리면 `theme.yaml` 을 고치고: `python SKILL_DIR/scripts/build_templates.py --theme {out_dir}/theme.yaml --out {out_dir}`",
+          f"3. 채우기: `python SKILL_DIR/scripts/fill.py --template {out_dir}/pptx/01-exec-report/template.pptx --content 내용.json --out 결과.pptx --company \"{theme['company']}\"`",
+          f"4. **다음 대화에서도 쓰려면** `{a.name}.zip` 을 사용자에게 전달 → 스킬 폴더 `profiles/` 에 넣어 다시 업로드 (또는 make_company_skill.py 로 전용 스킬)"]
     (out_dir / "brand.md").write_text("\n".join(L), encoding="utf-8")
     print(f"[표준화] {a.name}: 대표색 #{theme['colors']['primary']} · 강조색 #{theme['colors']['accent']} · 글꼴 {theme['fonts']['korean']} · 로고 {'있음' if theme['logo'] else '없음'}")
     for n in notes:
         print("  -", n)
+    import shutil
+    zbase = Path(a.out) / a.name
+    zpath = shutil.make_archive(str(zbase), "zip", root_dir=Path(a.out), base_dir=a.name)
     print(f"  → {out_dir}/ (양식 10종 + brand.md)")
+    print(f"  → {zpath}  ← 사용자에게 전달 (claude.ai 는 대화가 끝나면 폴더가 사라짐)")
 
 
 if __name__ == "__main__":
