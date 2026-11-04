@@ -6,6 +6,7 @@ description: "양식대로 — 회사 양식(또는 기본 제공 표준 양식 
 # 양식대로 (yangsik)
 
 **원칙: 새로 그리지 않는다. 양식을 복제해 '칸'에 내용만 채우고, 매번 검증한다.**
+PPT는 컨설팅 스타일(액션 타이틀 · 12단 그리드 · 타입 스케일 · 출처 필수) — `references/design-system.md`
 
 이 파일이 있는 폴더를 `SKILL_DIR` 이라 부른다. 모든 스크립트는 `python SKILL_DIR/scripts/<이름>.py` 로 실행한다.
 처음 한 번: `pip install -r SKILL_DIR/requirements.txt` (이미 있으면 생략. 실패해도 python-pptx·python-docx·pyyaml이 있으면 동작)
@@ -14,7 +15,7 @@ description: "양식대로 — 회사 양식(또는 기본 제공 표준 양식 
 
 | 사용자가 말하면 | 모드 | 읽을 파일 |
 |---|---|---|
-| "우리 회사 양식 등록/표준화해줘", 양식 파일만 올림 | **onboard** | `workflows/1-onboard.md` |
+| "우리 회사 양식 등록/표준화해줘", 양식 파일만 올림 | **onboard** (브랜드 추출 → 표준 양식 재구성 포함) | `workflows/1-onboard.md` |
 | "~를 PPT로/발표자료로", "슬라이드 만들어줘" | **fill-pptx** | `workflows/2-fill-pptx.md` |
 | "~를 워드로/보고서로/품의서로/회의록으로" | **fill-docx** | `workflows/3-fill-docx.md` |
 | "3번 장만 고쳐줘", "팀장님 코멘트 반영", 기존 파일 + 수정 요청 | **revise** | `workflows/4-revise.md` |
@@ -23,7 +24,7 @@ description: "양식대로 — 회사 양식(또는 기본 제공 표준 양식 
 | "우리 회사 전용 스킬로 묶어줘", 동료에게 줄 zip | **export-skill** | `workflows/7-export-skill.md` |
 
 판별이 애매하면: 파일이 첨부됐고 내용 요청이 없으면 onboard, 내용만 있으면 fill.
-**해당 workflow 파일을 반드시 읽고 따른다.** 내용을 쓰기 전에 `references/writing-guide.md` 도 읽는다.
+**해당 workflow 파일을 반드시 읽고 따른다.** 내용을 쓰기 전에 `references/writing-guide.md` 도 읽는다 (PPT는 `references/design-system.md` 7절 레이아웃 표도).
 
 ## 2. 어떤 양식을 쓸까
 
@@ -42,7 +43,7 @@ description: "양식대로 — 회사 양식(또는 기본 제공 표준 양식 
 
 ## 3. 공통 작업 순서 (fill)
 
-1. profile.yaml 읽기 → 흐름에 맞춰 **내용 JSON** 작성 (형식: `references/content-format.md`)
+1. profile.yaml 읽기 → **제목(액션 타이틀)만 먼저 나열**해 이야기가 되는지 확인 → 흐름에 맞춰 **내용 JSON** 작성 (형식: `references/content-format.md`)
 2. `python SKILL_DIR/scripts/fill.py --template <양식> --content 내용.json --out <결과>` (검증 자동 실행)
 3. 검증 결과가 FAIL/WARN 이면 **내용 JSON을 고쳐 다시 실행** (최대 3회). 남은 경고는 사용자에게 그대로 알린다.
 4. 가능하면 `--preview` 로 썸네일을 만들어 직접 눈으로 확인 (LibreOffice 없으면 생략)
@@ -51,7 +52,9 @@ description: "양식대로 — 회사 양식(또는 기본 제공 표준 양식 
 ## 4. 절대 하지 않는 것
 
 - python-pptx 로 텍스트박스를 새로 그리거나 좌표를 직접 잡지 않는다 → 레이아웃 슬롯만 쓴다
-- 글꼴·크기·색을 내용에 박지 않는다 → 양식이 정한다 (강조는 `**굵게**` 만)
+- 글꼴·크기·색·위치를 내용에 박지 않는다 → 양식이 정한다 (강조는 `**굵게**`, 표 `highlight_col`, 차트 `highlight` 만)
+- PPT 제목을 주제어("현황")로 쓰지 않는다 → 결론 문장 (check: `topic_title`)
+- 숫자가 있는 표·차트에 출처를 빼지 않는다 (check: `missing_source`)
 - 개조식 기호(□ ○ -)나 제목 번호(1. 가.)를 글에 직접 쓰지 않는다 → 양식이 자동으로 붙인다
 - 검증 FAIL 인 파일을 "완성"이라고 넘기지 않는다
 - 사용자의 원본 양식 파일을 덮어쓰지 않는다 (항상 새 파일)

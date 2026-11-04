@@ -41,7 +41,7 @@ DEFAULT_LEVEL = {
     "table_tall": "WARN", "empty_slot": "WARN", "guide_left": "WARN", "ai_tone": "WARN",
     "ending_style": "WARN", "item_long": "INFO", "gongmun": "INFO", "direct_symbol": "WARN",
     "direct_format": "WARN", "empty_paragraphs": "WARN", "heading_number_dup": "WARN",
-    "table_no_style": "INFO", "compat_toc": "INFO",
+    "table_no_style": "INFO", "compat_toc": "INFO", "topic_title": "WARN", "title_long": "WARN", "missing_source": "WARN",
 }
 LABEL = {
     "off_template_shape": "양식 밖 텍스트", "off_template_object": "양식 밖 개체", "missing_korean_font": "한글 글꼴",
@@ -49,7 +49,8 @@ LABEL = {
     "table_tall": "표 높이", "empty_slot": "빈 슬롯", "guide_left": "안내문 남음", "ai_tone": "AI 문체",
     "ending_style": "개조식 종결", "item_long": "긴 항목", "gongmun": "표기", "direct_symbol": "기호 직접 입력",
     "direct_format": "직접 서식", "empty_paragraphs": "빈 줄 반복", "heading_number_dup": "번호 중복",
-    "table_no_style": "표 스타일", "compat_toc": "호환성",
+    "table_no_style": "표 스타일", "compat_toc": "호환성", "topic_title": "주제어 제목", "title_long": "긴 제목",
+    "missing_source": "출처 없음",
 }
 
 
@@ -148,6 +149,18 @@ class Checker:
         self.findings.sort(key=lambda f: (LEVEL_ORDER[f.level], nat(f.where)))
         n = {k: sum(1 for f in self.findings if f.level == k) for k in LEVEL_ORDER}
         return n
+
+
+class _LazyCK:
+    _ck = None
+
+    def __getattr__(self, k):
+        if _LazyCK._ck is None:
+            _LazyCK._ck = Checker()
+        return getattr(_LazyCK._ck, k)
+
+
+_CK = _LazyCK()
 
 
 def _clip(t, n=40):
@@ -273,9 +286,24 @@ def check_pptx(path, ck: Checker):
         ck.add("line_break", "마스터", "어절 단위 줄바꿈이 꺼져 있음 → 한글 단어가 중간에서 잘릴 수 있음",
                "normalize.py 실행 (PowerPoint: 단락 → 한글 입력 체계 → '한글 단어 잘림 허용' 해제)")
 
+    NON_ACTION = {"표지", "섹션", "목차", "마무리", "핵심메시지"}
     for s_i, slide in enumerate(prs.slides, 1):
         layout_name = slide.slide_layout.name
         allow_end = layout_name in ck.gj.get("allow_layouts", [])
+        # 액션 타이틀 · 출처 (컨설팅 원칙)
+        title = next((s for s in slide.placeholders if "TITLE" in str(s.placeholder_format.type)), None)
+        if title is not None and layout_name not in NON_ACTION and title.text_frame.text.strip():
+            tt = title.text_frame.text.strip()
+            if len(tt) < 12 and not re.search(r"\d", tt):
+                ck.add("topic_title", f"슬라이드 {s_i} · 제목", f'제목이 주제어("{tt}") — 이 장의 결론 문장으로',
+                       "예: '현황' → '이용률은 3년째 하락, 현장직 접속이 막혀 있음'")
+            elif len(tt) > 55:
+                ck.add("title_long", f"슬라이드 {s_i} · 제목", f"제목 {len(tt)}자 — 2줄을 넘길 수 있음", "45자 안팎으로 줄이고 세부는 본문으로")
+        has_data = any((getattr(s, "has_chart", False) and s.has_chart) or (getattr(s, "has_table", False) and s.has_table
+                       and re.search(r"\d", " ".join(c.text for r in s.table.rows for c in r.cells))) for s in slide.shapes)
+        src = next((s for s in slide.placeholders if s.name == "출처"), None)
+        if has_data and (src is None or not src.text_frame.text.replace("출처:", "").strip()):
+            ck.add("missing_source", f"슬라이드 {s_i}", "숫자가 있는 표·차트에 출처가 없음", "'출처' 슬롯에 자료·기준일 (예: 출처: 인사시스템, 2026. 10.)")
         for shape in _iter_shapes(slide.shapes):
             where = f"슬라이드 {s_i} · {shape.name}"
             if not shape.is_placeholder:
@@ -325,33 +353,57 @@ def _iter_shapes(shapes):
             yield s
 
 
-def _check_overflow(shape, prs, is_title, where, ck: Checker):
-    if shape.width is None or shape.height is None:
-        return
+def _text_metrics(shape, prs, is_title, ty, ck=None):
+    """(필요 높이 in, 상자 높이 in, 자동맞춤 모드) — 글자 폭 추정."""
+    ck = ck or _CK
     chain = _inherit_chain(shape, prs)
     ins = _insets(chain)
     box_w = shape.width / 914400 - ins["lIns"] - ins["rIns"]
     box_h = shape.height / 914400 - ins["tIns"] - ins["bIns"]
-    if box_w <= 0 or box_h <= 0:
-        return
     mode, scale = _autofit(chain)
     total = 0.0
     for i, p in enumerate(shape.text_frame.paragraphs):
         lvl = p.level
-        sz = None
-        for r in p.runs:
-            if r.font.size:
-                sz = r.font.size.pt
-                break
+        sz = next((r.font.size.pt for r in p.runs if r.font.size), None)
         sz = (sz or _resolve(chain, prs, lvl, "sz", is_title)) * scale
-        ln = (_resolve(chain, prs, lvl, "lnSpc", is_title) or 1.0) * ck.ty["line_height"]
+        ln = (_resolve(chain, prs, lvl, "lnSpc", is_title) or 1.0) * ty["line_height"]
         bef = _resolve(chain, prs, lvl, "spcBef", is_title) if i else 0.0
         marL = _resolve(chain, prs, lvl, "marL", is_title) or 0.0
         avail = max(box_w - marL, 0.5)
         text = "".join(r.text for r in p.runs)
-        em_w = ck.text_width_em(text) * sz / 72  # inch
-        lines = max(1, math.ceil(em_w / avail - 0.02)) if text else 1
+        em_w = ck.text_width_em(text) * sz / 72
+        # 굵은 글자는 약 5% 넓고, 줄 끝 어절이 통째로 넘어가므로 폭의 94%만 쓴다고 본다
+        bold = any(r.font.bold for r in p.runs) or _resolve_bold(chain, lvl)
+        em_w *= 1.05 if bold else 1.0
+        lines = max(1, math.ceil(em_w / (avail * 0.94))) if text else 1
         total += lines * sz * ln / 72 + bef / 72
+    return total, box_h, mode, ins
+
+
+def _resolve_bold(chain, level):
+    for el in chain:
+        ppr = _lvl_ppr(el.find(f".//{A}lstStyle"), level)
+        if ppr is not None:
+            d = ppr.find(f"{A}defRPr")
+            if d is not None and d.get("b") is not None:
+                return d.get("b") == "1"
+    return False
+
+
+def estimate_height(shape, prs, ty=None):
+    """채우기 후 배치용: 글이 차지할 높이 + 상하 안쪽 여백 (인치)."""
+    ty = ty or _CK.ty
+    is_title = shape.is_placeholder and "TITLE" in str(shape.placeholder_format.type)
+    need, _box, _mode, ins = _text_metrics(shape, prs, is_title, ty)
+    return need + ins["tIns"] + ins["bIns"] + 0.05
+
+
+def _check_overflow(shape, prs, is_title, where, ck: Checker):
+    if shape.width is None or shape.height is None:
+        return
+    total, box_h, mode, _ins = _text_metrics(shape, prs, is_title, ck.ty, ck)
+    if box_h <= 0:
+        return
     ratio = total / box_h
     if ratio > ck.ty["overflow_fail"]:
         if mode == "norm":

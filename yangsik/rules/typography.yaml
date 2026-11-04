@@ -31,7 +31,7 @@ korean_fonts:   # 이 이름(일부 포함)이면 한글 글꼴로 인정
   - Seoul
 # 넘침 추정용 글자 폭 (em 단위, 1em = 글자 크기)
 char_width:
-  hangul: 0.95
+  hangul: 1.0
   cjk: 1.0
   latin_upper: 0.66
   latin_lower: 0.53

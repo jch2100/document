@@ -1,7 +1,7 @@
 name: 02-proposal-sales
 kind: pptx
 title: 제안·영업
-purpose: 고객 문제 공감→해결책→근거→조건 제시
+purpose: 고객 문제 공감→해결책→근거→조건
 audience: 고객사 담당·의사결정자
 length: 10~15장
 file: template.pptx
@@ -9,19 +9,19 @@ storyline:
 - '표지: [고객사명] [과제명] 제안'
 - '목차: 목차'
 - '핵심메시지: 제안 요지'
-- '본문: 고객 과제 이해'
-- '3단카드: 제안 솔루션'
-- '이미지: 서비스 구성'
-- '표: 일정 및 비용'
-- '2단비교: 기대 효과'
-- '마무리: 감사합니다'
+- '본문: [고객이 지금 겪는 문제를 결론 문장으로]'
+- '3단카드: [솔루션을 한 문장으로]'
+- '프로세스: [○주 안에 4단계로 완료]'
+- '표: [총 기간·총 비용 한 문장]'
+- '2단비교: [가장 큰 변화를 숫자로]'
+- '마무리: 다음 단계'
 layouts:
   표지:
     use: 문서 첫 장
     slots:
       제목:
         type: center_title
-        limit: 한 줄, 25자 이내
+        limit: 결론 문장(액션 타이틀), 2줄·45자 이내
       부제:
         type: subtitle
         limit: 한 줄
@@ -30,43 +30,49 @@ layouts:
   목차:
     use: 목차·흐름
     slots:
+      트래커:
+        type: body
+        limit: 섹션 이름, 15자 이내
       제목:
         type: title
-        limit: 한 줄, 25자 이내
+        limit: 결론 문장(액션 타이틀), 2줄·45자 이내
       본문:
         type: body
         limit: 항목 3~6개, 하위 포함 10줄 이내
   섹션:
-    use: 큰 단락 구분
+    use: 큰 단락 구분 (10장 이상일 때)
     slots:
       번호:
         type: body
       제목:
         type: title
-        limit: 한 줄, 25자 이내
+        limit: 결론 문장(액션 타이틀), 2줄·45자 이내
       설명:
         type: body
+        limit: 한 줄
   본문:
-    use: 개조식 설명 (가장 많이 씀)
+    use: 개조식 근거 (가장 많이 씀)
     slots:
+      트래커:
+        type: body
+        limit: 섹션 이름, 15자 이내
       제목:
         type: title
-        limit: 한 줄, 25자 이내
-      핵심메시지:
-        type: body
-        limit: 한 문장, 45자 이내
+        limit: 결론 문장(액션 타이틀), 2줄·45자 이내
       본문:
         type: body
         limit: 항목 3~6개, 하위 포함 10줄 이내
+      출처:
+        type: body
   2단비교:
     use: 전/후, 문제/원인, 나쁜 예/좋은 예
     slots:
+      트래커:
+        type: body
+        limit: 섹션 이름, 15자 이내
       제목:
         type: title
-        limit: 한 줄, 25자 이내
-      핵심메시지:
-        type: body
-        limit: 한 문장, 45자 이내
+        limit: 결론 문장(액션 타이틀), 2줄·45자 이내
       좌측제목:
         type: body
       좌측본문:
@@ -77,15 +83,17 @@ layouts:
       우측본문:
         type: body
         limit: 항목 2~5개
+      출처:
+        type: body
   3단카드:
-    use: 핵심 3가지, KPI 3개, 요청 3가지
+    use: 요약(상황|발견|제언), 세 가지 축, KPI 셋
     slots:
+      트래커:
+        type: body
+        limit: 섹션 이름, 15자 이내
       제목:
         type: title
-        limit: 한 줄, 25자 이내
-      핵심메시지:
-        type: body
-        limit: 한 문장, 45자 이내
+        limit: 결론 문장(액션 타이틀), 2줄·45자 이내
       카드1제목:
         type: body
         limit: 10자 이내 또는 숫자
@@ -100,72 +108,153 @@ layouts:
         type: body
       카드3본문:
         type: body
-  표:
-    use: 비교표·일정표·R&R
+      출처:
+        type: body
+  프로세스:
+    use: 4단계 추진 방식·절차
     slots:
+      트래커:
+        type: body
+        limit: 섹션 이름, 15자 이내
       제목:
         type: title
-        limit: 한 줄, 25자 이내
-      핵심메시지:
+        limit: 결론 문장(액션 타이틀), 2줄·45자 이내
+      단계1제목:
         type: body
-        limit: 한 문장, 45자 이내
+        limit: 8자 이내
+      단계1본문:
+        type: body
+        limit: 항목 1~3개
+      단계2제목:
+        type: body
+      단계2본문:
+        type: body
+      단계3제목:
+        type: body
+      단계3본문:
+        type: body
+      단계4제목:
+        type: body
+      단계4본문:
+        type: body
+      출처:
+        type: body
+  매트릭스:
+    use: 2x2 우선순위 (영향×가능성 등)
+    slots:
+      트래커:
+        type: body
+        limit: 섹션 이름, 15자 이내
+      제목:
+        type: title
+        limit: 결론 문장(액션 타이틀), 2줄·45자 이내
+      세로축:
+        type: body
+      가로축:
+        type: body
+      좌상:
+        type: body
+        limit: 이름 + 항목 1~3개
+      우상:
+        type: body
+      좌하:
+        type: body
+      우하:
+        type: body
+      해설:
+        type: body
+        limit: 2~3개
+      출처:
+        type: body
+  표:
+    use: 비교표·일정·R&R (숫자는 자동 오른쪽 정렬)
+    slots:
+      트래커:
+        type: body
+        limit: 섹션 이름, 15자 이내
+      제목:
+        type: title
+        limit: 결론 문장(액션 타이틀), 2줄·45자 이내
       표:
         type: table
       출처:
         type: body
   차트:
-    use: 추이·비교 수치
+    use: 추이·비교 수치 + 시사점
     slots:
+      트래커:
+        type: body
+        limit: 섹션 이름, 15자 이내
       제목:
         type: title
-        limit: 한 줄, 25자 이내
-      핵심메시지:
-        type: body
-        limit: 한 문장, 45자 이내
+        limit: 결론 문장(액션 타이틀), 2줄·45자 이내
       차트:
         type: chart
       해설:
         type: body
+        limit: 2~3개
+      출처:
+        type: body
+  빅넘버:
+    use: 숫자 하나가 결론일 때
+    slots:
+      트래커:
+        type: body
+        limit: 섹션 이름, 15자 이내
+      제목:
+        type: title
+        limit: 결론 문장(액션 타이틀), 2줄·45자 이내
+      숫자:
+        type: body
+        limit: 숫자+단위 하나
+      설명:
+        type: body
+        limit: 한 줄
+      본문:
+        type: body
+        limit: 항목 3~6개, 하위 포함 10줄 이내
       출처:
         type: body
   핵심메시지:
-    use: 요약·결론 한 장
+    use: 요약·전환 한 문장
     slots:
       제목:
         type: title
-        limit: 한 줄, 25자 이내
+        limit: 결론 문장(액션 타이틀), 2줄·45자 이내
       핵심메시지:
         type: body
-        limit: 한 문장, 45자 이내
       보조설명:
         type: body
         limit: 한 줄
   이미지:
     use: 화면·구성도·사진 + 설명
     slots:
+      트래커:
+        type: body
+        limit: 섹션 이름, 15자 이내
       제목:
         type: title
-        limit: 한 줄, 25자 이내
-      핵심메시지:
-        type: body
-        limit: 한 문장, 45자 이내
+        limit: 결론 문장(액션 타이틀), 2줄·45자 이내
       이미지:
         type: picture
       캡션:
         type: body
+      출처:
+        type: body
   마무리:
-    use: 감사·문의·다음 단계
+    use: 요청·다음 단계·문의
     slots:
       제목:
         type: title
-        limit: 한 줄, 25자 이내
+        limit: 결론 문장(액션 타이틀), 2줄·45자 이내
       본문:
         type: body
         limit: 항목 3~6개, 하위 포함 10줄 이내
 writing:
   style: gaejosik
   rules:
-  - '두괄식: 장마다 ''핵심메시지''에 결론부터'
+  - '액션 타이틀: 장 제목 = 그 장의 결론 문장 (제목만 이어 읽어도 이야기가 됨)'
+  - 한 장 = 한 메시지. 제목에 '그리고'가 들어가면 장을 나눔
   - '개조식: 명사형·''~함/~임''으로 끝냄, ''~습니다'' 금지(마무리 장 제외)'
   - 한 항목 = 한 주장, 한 줄 40자 안팎
   - '숫자는 단위와 함께 (예: 1,200만 원, 15%p)'
@@ -189,3 +278,5 @@ check:
   - ai_tone
   - ending_style
   - empty_slot
+  - topic_title
+  - missing_source

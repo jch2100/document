@@ -253,7 +253,15 @@ def _header_footer(doc, theme, doc_label):
     hp = sec.header.paragraphs[0]
     for r in list(hp.runs):
         r._r.getparent().remove(r._r)
-    hp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    logo = theme.get("logo")
+    if logo and Path(logo).exists():
+        from docx.enum.text import WD_TAB_ALIGNMENT
+        hp.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        hp.paragraph_format.tab_stops.add_tab_stop(sec.page_width - sec.left_margin - sec.right_margin, WD_TAB_ALIGNMENT.RIGHT)
+        hp.add_run().add_picture(str(logo), height=Cm(0.55))
+        hp.add_run("\t")
+    else:
+        hp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     r = hp.add_run(f"{theme['company']}  |  {doc_label}")
     r.font.size = Pt(8.5)
     r.font.color.rgb = _rgb(C["muted"])
@@ -641,7 +649,7 @@ def fill(template_path, content, out_path, base_dir=None, warn=print, styles=Non
         hp = doc.sections[0].header.paragraphs[0]
         runs = [r for r in hp.runs if r.text.strip()]
         if runs:
-            company = hp.text.split("|")[0].strip()
+            company = hp.text.split("|")[0].replace("\t", "").strip()
             runs[0].text = f"{company}  |  {header_label}" if company else header_label
             for r in hp.runs:
                 if r is not runs[0] and r._r is not runs[0]._r:

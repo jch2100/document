@@ -75,6 +75,27 @@ with tempfile.TemporaryDirectory() as t:
     run(SK / "scripts/fill.py", "--template", d, "--content", ROOT / "examples/01-1page-report/content.json", "--out", t / "u.docx")
     run(SK / "scripts/make_company_skill.py", t / "profiles/t1", "--skill-name", "t-one", "--out", t / "dist")
 
+    print("6) 브랜드 표준화 → 10종 + 채우기")
+    bs = ROOT / "workshop/brand-sample"
+    r = run(SK / "scripts/standardize.py", bs / "greentec-template.pptx", bs / "greentec-report.docx", "--name", "g", "--company", "그린텍",
+            "--out", t / "profiles", "--no-preview")
+    if "#0061" not in r.stdout and "#0070" not in r.stdout:
+        fails.append("브랜드 대표색(녹색) 추출 실패")
+    if len(list((t / "profiles/g").glob("*/*/template.*"))) != 10:
+        fails.append("표준화 결과가 10종이 아님")
+    r = run(SK / "scripts/fill.py", "--template", t / "profiles/g/pptx/01-exec-report/template.pptx",
+            "--content", ROOT / "examples/01-exec-report/content.json", "--out", t / "g.pptx")
+    if "PASS" not in r.stdout:
+        fails.append("브랜드 양식 채우기 PASS 아님")
+
+    print("7) 컨설팅 원칙 검사: 주제어 제목·출처 누락")
+    c2 = t / "c2.json"
+    c2.write_text(json.dumps({"slides": [{"layout": "표", "제목": "현황", "표": {"header": ["a", "b"], "rows": [["x", "12"]]}}]},
+                             ensure_ascii=False), encoding="utf-8")
+    r = run(SK / "scripts/fill.py", "--template", "pptx/01", "--content", c2, "--out", t / "c2.pptx")
+    if "주제어" not in r.stdout or "출처" not in r.stdout:
+        fails.append("topic_title / missing_source 미검출")
+
 print()
 if fails:
     print(f"실패 {len(fails)}건:", fails)

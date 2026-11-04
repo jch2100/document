@@ -7,10 +7,10 @@ fonts:
   korean: "맑은 고딕"          # 한글(동아시아) 글꼴. Windows·Mac Office 기본 탑재
   latin: "맑은 고딕"           # 영문·숫자 글꼴. 한글과 같게 두면 섞였을 때 높이가 맞음
 colors:                       # 6자리 HEX, # 없이
-  primary: "1F3A5F"           # 제목·표 머리글 (짙은 남색)
-  accent: "2E75B6"            # 핵심 메시지·강조선
-  highlight: "D9822B"         # 아주 가끔 쓰는 경고·포인트
-  text: "222222"              # 본문
+  primary: "0B2545"           # 제목·머리띠·차트 기본 (짙은 남색)
+  accent: "1F6FEB"            # 강조: 트래커·봐야 할 한 곳 (아껴 쓰기)
+  highlight: "E07A1F"         # 아주 가끔 쓰는 경고·포인트
+  text: "1F2937"              # 본문
   muted: "6B7280"             # 보조 텍스트·캡션
-  light: "F2F4F7"             # 박스 배경·표 줄무늬
+  light: "F3F5F8"             # 박스 배경·표 줄무늬
 logo: null                    # 로고 PNG 경로 (예: theme/logo.png). 없으면 회사명 텍스트로 대체
