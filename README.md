@@ -46,7 +46,7 @@ AI에게 PPT를 맡기면 이런 일이 생깁니다.
 
 ### 방법 ① claude.ai / Claude 데스크톱 앱 (코딩 몰라도 됨)
 
-1. [Releases](../../releases)에서 **`yangsik.zip`** 을 받습니다 (압축 풀지 마세요)
+1. [Releases](https://github.com/jch2100/document/releases)에서 **`yangsik.zip`** 을 받습니다 (압축 풀지 마세요)
 2. claude.ai → **설정 → 기능(Capabilities)** → **코드 실행 및 파일 생성**을 켭니다
 3. 같은 화면 **스킬(Skills)** → **스킬 업로드** → `yangsik.zip` 선택
 4. 새 대화에서: *"양식대로 스킬로 1페이지 보고서 만들어줘"*
@@ -57,10 +57,10 @@ AI에게 PPT를 맡기면 이런 일이 생깁니다.
 ### 방법 ② Claude Code
 
 ```bash
-git clone https://github.com/<계정>/yangsik.git
+git clone https://github.com/jch2100/document.git
 ```
 ```bash
-mkdir -p ~/.claude/skills && cp -r yangsik/yangsik ~/.claude/skills/yangsik
+mkdir -p ~/.claude/skills && cp -r document/yangsik ~/.claude/skills/yangsik
 ```
 ```bash
 pip install -r ~/.claude/skills/yangsik/requirements.txt

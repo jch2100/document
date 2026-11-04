@@ -24,15 +24,15 @@
 ## B. Claude Code
 
 ```bash
-git clone https://github.com/<계정>/yangsik.git
+git clone https://github.com/jch2100/document.git
 ```
 개인용(모든 프로젝트):
 ```bash
-mkdir -p ~/.claude/skills && cp -r yangsik/yangsik ~/.claude/skills/yangsik
+mkdir -p ~/.claude/skills && cp -r document/yangsik ~/.claude/skills/yangsik
 ```
 프로젝트용(이 폴더에서만):
 ```bash
-mkdir -p .claude/skills && cp -r yangsik/yangsik .claude/skills/yangsik
+mkdir -p .claude/skills && cp -r document/yangsik .claude/skills/yangsik
 ```
 패키지:
 ```bash
