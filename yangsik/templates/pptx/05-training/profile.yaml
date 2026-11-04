@@ -1,0 +1,191 @@
+name: 05-training
+kind: pptx
+title: 교육·워크숍
+purpose: 개념→예시→실습→정리
+audience: 교육생
+length: 15~30장
+file: template.pptx
+storyline:
+- '표지: [교육 제목]'
+- '목차: 오늘의 흐름'
+- '핵심메시지: 오늘 가져갈 것'
+- '섹션: [모듈 1 제목]'
+- '본문: [개념]'
+- '2단비교: 나쁜 예와 좋은 예'
+- '이미지: 실습 화면'
+- '본문: 실습'
+- '마무리: Q&A'
+layouts:
+  표지:
+    use: 문서 첫 장
+    slots:
+      제목:
+        type: center_title
+        limit: 한 줄, 25자 이내
+      부제:
+        type: subtitle
+        limit: 한 줄
+      날짜·작성자:
+        type: body
+  목차:
+    use: 목차·흐름
+    slots:
+      제목:
+        type: title
+        limit: 한 줄, 25자 이내
+      본문:
+        type: body
+        limit: 항목 3~6개, 하위 포함 10줄 이내
+  섹션:
+    use: 큰 단락 구분
+    slots:
+      번호:
+        type: body
+      제목:
+        type: title
+        limit: 한 줄, 25자 이내
+      설명:
+        type: body
+  본문:
+    use: 개조식 설명 (가장 많이 씀)
+    slots:
+      제목:
+        type: title
+        limit: 한 줄, 25자 이내
+      핵심메시지:
+        type: body
+        limit: 한 문장, 45자 이내
+      본문:
+        type: body
+        limit: 항목 3~6개, 하위 포함 10줄 이내
+  2단비교:
+    use: 전/후, 문제/원인, 나쁜 예/좋은 예
+    slots:
+      제목:
+        type: title
+        limit: 한 줄, 25자 이내
+      핵심메시지:
+        type: body
+        limit: 한 문장, 45자 이내
+      좌측제목:
+        type: body
+      좌측본문:
+        type: body
+        limit: 항목 2~5개
+      우측제목:
+        type: body
+      우측본문:
+        type: body
+        limit: 항목 2~5개
+  3단카드:
+    use: 핵심 3가지, KPI 3개, 요청 3가지
+    slots:
+      제목:
+        type: title
+        limit: 한 줄, 25자 이내
+      핵심메시지:
+        type: body
+        limit: 한 문장, 45자 이내
+      카드1제목:
+        type: body
+        limit: 10자 이내 또는 숫자
+      카드1본문:
+        type: body
+        limit: 항목 1~3개
+      카드2제목:
+        type: body
+      카드2본문:
+        type: body
+      카드3제목:
+        type: body
+      카드3본문:
+        type: body
+  표:
+    use: 비교표·일정표·R&R
+    slots:
+      제목:
+        type: title
+        limit: 한 줄, 25자 이내
+      핵심메시지:
+        type: body
+        limit: 한 문장, 45자 이내
+      표:
+        type: table
+      출처:
+        type: body
+  차트:
+    use: 추이·비교 수치
+    slots:
+      제목:
+        type: title
+        limit: 한 줄, 25자 이내
+      핵심메시지:
+        type: body
+        limit: 한 문장, 45자 이내
+      차트:
+        type: chart
+      해설:
+        type: body
+      출처:
+        type: body
+  핵심메시지:
+    use: 요약·결론 한 장
+    slots:
+      제목:
+        type: title
+        limit: 한 줄, 25자 이내
+      핵심메시지:
+        type: body
+        limit: 한 문장, 45자 이내
+      보조설명:
+        type: body
+        limit: 한 줄
+  이미지:
+    use: 화면·구성도·사진 + 설명
+    slots:
+      제목:
+        type: title
+        limit: 한 줄, 25자 이내
+      핵심메시지:
+        type: body
+        limit: 한 문장, 45자 이내
+      이미지:
+        type: picture
+      캡션:
+        type: body
+  마무리:
+    use: 감사·문의·다음 단계
+    slots:
+      제목:
+        type: title
+        limit: 한 줄, 25자 이내
+      본문:
+        type: body
+        limit: 항목 3~6개, 하위 포함 10줄 이내
+writing:
+  style: gaejosik
+  rules:
+  - '두괄식: 장마다 ''핵심메시지''에 결론부터'
+  - '개조식: 명사형·''~함/~임''으로 끝냄, ''~습니다'' 금지(마무리 장 제외)'
+  - 한 항목 = 한 주장, 한 줄 40자 안팎
+  - '숫자는 단위와 함께 (예: 1,200만 원, 15%p)'
+  - 날짜는 '2026. 11. 4.' 형식
+  - 기호·번호는 직접 쓰지 않음 (양식이 자동으로 붙임)
+  banned:
+  - 혁신적인
+  - 획기적인
+  - 다양한
+  - ~하는 것이 중요합니다
+  - ~라고 할 수 있습니다
+  - —
+  - 이모지
+check:
+  fail_on:
+  - off_template_shape
+  - missing_korean_font
+  - overflow_high
+  warn_on:
+  - overflow_maybe
+  - ai_tone
+  - ending_style
+  - empty_slot

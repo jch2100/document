@@ -1,0 +1,70 @@
+name: 05-minutes
+kind: docx
+title: 회의록
+purpose: 결정과 할 일을 남기는 기록
+audience: 참석자·관계자
+length: A4 1~2쪽
+file: template.docx
+outline:
+- 안건
+- 논의 내용
+- '[안건 1]'
+- '[안건 2]'
+- 결정 사항
+- 할 일
+- 다음 회의
+blocks:
+  title: 문서 제목
+  subtitle: 부제
+  meta: 정보표 [[라벨, 값], ...]
+  approval: 결재란 [직위, ...]
+  summary: 요약 박스 (문자열 또는 목록)
+  h1: 대제목 → 자동 '1.'
+  h2: 중제목 → 자동 '가.'
+  h3: 소제목 → 자동 '1)'
+  b: 개조식 목록 → 자동 □ ○ - (중첩 목록 = 하위 단계)
+  p: 서술형 문단
+  note: ※ 참고
+  table: '{header, rows, col_widths, label_col}'
+  cover: 표지 {title, subtitle, date, company}
+  toc: 목차 필드
+  pagebreak: 쪽 나눔
+  image: 그림 경로
+styles:
+  title: Title
+  h1: Heading 1
+  h2: Heading 2
+  h3: Heading 3
+  bullet1: 개조식 1
+  bullet2: 개조식 2
+  bullet3: 개조식 3
+  note: 참고
+  summary: 요약 박스
+  table: 양식대로 표
+writing:
+  style: gaejosik
+  rules:
+  - '두괄식: 장마다 ''핵심메시지''에 결론부터'
+  - '개조식: 명사형·''~함/~임''으로 끝냄, ''~습니다'' 금지(마무리 장 제외)'
+  - 한 항목 = 한 주장, 한 줄 40자 안팎
+  - '숫자는 단위와 함께 (예: 1,200만 원, 15%p)'
+  - 날짜는 '2026. 11. 4.' 형식
+  - 기호·번호는 직접 쓰지 않음 (양식이 자동으로 붙임)
+  - 서술형 문단(p)은 제안서·품의 문구에만
+  banned:
+  - 혁신적인
+  - 획기적인
+  - 다양한
+  - ~하는 것이 중요합니다
+  - ~라고 할 수 있습니다
+  - —
+  - 이모지
+check:
+  fail_on:
+  - missing_korean_font
+  - direct_symbol
+  warn_on:
+  - ai_tone
+  - ending_style
+  - direct_format
+  - empty_paragraphs

@@ -1,0 +1,14 @@
+# 회사 양식은 기본으로 올리지 않음 (보안)
+profiles/*
+!profiles/README.md
+yangsik/profiles/*
+!yangsik/profiles/README.md
+# 생성물
+dist/
+*_preview/
+*_check.md
+!examples/**/*_check.md
+__pycache__/
+*.pyc
+.DS_Store
+~$*

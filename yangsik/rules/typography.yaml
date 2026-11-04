@@ -1,0 +1,44 @@
+# 한국어 글꼴·줄바꿈 검사 기준
+id: typography
+korean_fonts:   # 이 이름(일부 포함)이면 한글 글꼴로 인정
+  - 맑은 고딕
+  - Malgun Gothic
+  - 나눔
+  - Nanum
+  - Pretendard
+  - 본고딕
+  - Noto Sans KR
+  - Noto Sans CJK KR
+  - Noto Serif KR
+  - Source Han Sans K
+  - Spoqa
+  - 함초롬
+  - HCR
+  - 바탕
+  - 돋움
+  - 굴림
+  - Gulim
+  - Dotum
+  - Batang
+  - 휴먼
+  - KoPub
+  - IBM Plex Sans KR
+  - SUIT
+  - Gmarket
+  - 에스코어
+  - S-Core
+  - 서울
+  - Seoul
+# 넘침 추정용 글자 폭 (em 단위, 1em = 글자 크기)
+char_width:
+  hangul: 0.95
+  cjk: 1.0
+  latin_upper: 0.66
+  latin_lower: 0.53
+  digit: 0.56
+  space: 0.28
+  punct: 0.35
+  other: 0.7
+line_height: 1.2          # 줄 높이 (글자 크기 배수, lnSpc 없을 때)
+overflow_warn: 1.0        # 예상 높이 / 상자 높이 > 1.0 → 경고
+overflow_fail: 1.2        # > 1.2 → 실패 (거의 확실히 넘침)
